@@ -48,9 +48,21 @@ const state = projectBranchState(events);
                    <p class="text-sm text-gray-600 mb-2">by {item.author}</p>
                    <p class="text-gray-800 mb-4">{item.reason}</p>
                    <div class="flex gap-2">
-                     <button class="text-xs px-3 py-1 border rounded hover:bg-black hover:text-white transition-colors">Keep</button>
-                     <button class="text-xs px-3 py-1 border rounded hover:bg-gray-100 transition-colors">Maybe</button>
-                     <button class="text-xs px-3 py-1 text-red-500 hover:bg-red-50 rounded transition-colors">Reject</button>
+                     <form method="POST" action={`/api/branches/${slug}/status`}>
+                       <input type="hidden" name="itemTitle" value={item.title} />
+                       <input type="hidden" name="status" value="ACCEPTED" />
+                       <button type="submit" class="text-xs px-3 py-1 border rounded hover:bg-black hover:text-white transition-colors">Keep</button>
+                     </form>
+                     <form method="POST" action={`/api/branches/${slug}/status`}>
+                       <input type="hidden" name="itemTitle" value={item.title} />
+                       <input type="hidden" name="status" value="DEFERRED" />
+                       <button type="submit" class="text-xs px-3 py-1 border rounded hover:bg-gray-100 transition-colors">Maybe</button>
+                     </form>
+                     <form method="POST" action={`/api/branches/${slug}/status`}>
+                       <input type="hidden" name="itemTitle" value={item.title} />
+                       <input type="hidden" name="status" value="REJECTED" />
+                       <button type="submit" class="text-xs px-3 py-1 text-red-500 hover:bg-red-50 rounded transition-colors">Reject</button>
+                     </form>
                    </div>
                  </li>
                ))}
