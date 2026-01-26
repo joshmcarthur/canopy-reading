@@ -65,6 +65,37 @@ describe('Branch State Projection', () => {
     expect(state.library[0].status).toBe('ACCEPTED');
   });
 
+  it('should move already read items to library', () => {
+    const events: AppEvent[] = [
+      {
+        id: '1',
+        timestamp: '2023-01-01T00:00:00Z',
+        type: 'RECOMMENDATIONS_GENERATED',
+        payload: {
+          items: [
+            { title: 'Book A', author: 'Author A', reason: 'Reason A' }
+          ],
+          model: 'gpt-4'
+        }
+      },
+      {
+        id: '2',
+        timestamp: '2023-01-02T00:00:00Z',
+        type: 'ITEM_STATUS_CHANGED',
+        payload: {
+          itemTitle: 'Book A',
+          status: 'ALREADY_READ'
+        }
+      }
+    ];
+
+    const state = projectBranchState(events);
+    expect(state.inbox).toHaveLength(0);
+    expect(state.library).toHaveLength(1);
+    expect(state.library[0].title).toBe('Book A');
+    expect(state.library[0].status).toBe('ALREADY_READ');
+  });
+
   it('should remove rejected items from inbox', () => {
     const events: AppEvent[] = [
       {

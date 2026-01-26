@@ -41,7 +41,7 @@ export function projectBranchState(events: AppEvent[]): BranchState {
           // Remove from inbox
           state.inbox.splice(inboxIndex, 1);
           
-          if (status === 'ACCEPTED' || status === 'DEFERRED') {
+          if (status === 'ACCEPTED' || status === 'DEFERRED' || status === 'ALREADY_READ') {
              // Move to library with new status
              item.status = status;
              state.library.push(item);

@@ -41,7 +41,7 @@ export interface RecommendationsGeneratedEvent extends BaseEvent {
   };
 }
 
-export type ItemStatus = 'PENDING' | 'ACCEPTED' | 'DEFERRED' | 'REJECTED';
+export type ItemStatus = 'PENDING' | 'ACCEPTED' | 'DEFERRED' | 'REJECTED' | 'ALREADY_READ';
 
 export interface ItemStatusChangedEvent extends BaseEvent {
   type: 'ITEM_STATUS_CHANGED';
