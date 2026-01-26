@@ -29,7 +29,7 @@ export async function generateRecommendations(
   const state = projectBranchState(history);
   
   const systemPrompt = `You are a helpful reading assistant. 
-  The user has a reading inquiry described as: "${branch.description}".
+  The user is looking for something to read, described as: "${branch.description}".
   
   Context:
   - Accepted Books: ${state.library.map(b => `${b.title} by ${b.author}`).join(', ')}
@@ -39,7 +39,7 @@ export async function generateRecommendations(
   For each book, provide:
   - title
   - author
-  - reason (a brief explanation of why it fits the inquiry)
+  - reason (a brief explanation of why it fits what they're looking for)
   
   Respond in JSON format with a list of objects under the key "items".
   `;
