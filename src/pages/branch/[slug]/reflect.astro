@@ -1,27 +1,27 @@
 ---
-import Layout from '../../../layouts/Layout.astro';
-import { getBranch, getBranchEvents } from '../../../lib/dal';
-import { projectBranchState } from '../../../domain/projection';
+import { projectBranchState } from "../../../domain/projection";
+import Layout from "../../../layouts/Layout.astro";
+import { getBranch, getBranchEvents } from "../../../lib/dal";
 
 const { slug } = Astro.params;
 
 if (!slug) {
-  return Astro.redirect('/');
+	return Astro.redirect("/");
 }
 
 const branch = await getBranch(slug);
 if (!branch) {
-  return Astro.redirect('/404');
+	return Astro.redirect("/404");
 }
 
 const events = await getBranchEvents(slug);
 const state = projectBranchState(events);
 
 // Get itemTitle from query params
-const itemTitle = Astro.url.searchParams.get('itemTitle');
-const bookItem = itemTitle 
-  ? [...state.library, ...state.inbox].find(item => item.title === itemTitle)
-  : null;
+const itemTitle = Astro.url.searchParams.get("itemTitle");
+const bookItem = itemTitle
+	? [...state.library, ...state.inbox].find((item) => item.title === itemTitle)
+	: null;
 
 const isBookContext = !!itemTitle && !!bookItem;
 ---

@@ -1,16 +1,16 @@
 ---
-import Layout from '../../../layouts/Layout.astro';
-import { getBranch } from '../../../lib/dal';
+import Layout from "../../../layouts/Layout.astro";
+import { getBranch } from "../../../lib/dal";
 
 const { slug } = Astro.params;
 
 if (!slug) {
-  return Astro.redirect('/');
+	return Astro.redirect("/");
 }
 
 const branch = await getBranch(slug);
 if (!branch) {
-  return Astro.redirect('/404');
+	return Astro.redirect("/404");
 }
 ---
 

@@ -1,59 +1,66 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import { getAllBranches, createBranch, getBranchEvents } from '../lib/dal';
-import { projectBranchState } from '../domain/projection';
-import canopyLogo from '../assets/canopy.png';
+import canopyLogo from "../assets/canopy.png";
+import { projectBranchState } from "../domain/projection";
+import Layout from "../layouts/Layout.astro";
+import { createBranch, getAllBranches, getBranchEvents } from "../lib/dal";
 
-if (Astro.request.method === 'POST') {
-  try {
-    const data = await Astro.request.formData();
-    const name = data.get('name')?.toString();
-    const description = data.get('description')?.toString();
+if (Astro.request.method === "POST") {
+	try {
+		const data = await Astro.request.formData();
+		const name = data.get("name")?.toString();
+		const description = data.get("description")?.toString();
 
-    if (name && description) {
-       const newBranch = await createBranch(name, description);
+		if (name && description) {
+			const newBranch = await createBranch(name, description);
 
-       return Astro.redirect(`/branch/${newBranch.slug}`);
-    }
-  } catch (error) {
-    console.error(error);
-  }
+			return Astro.redirect(`/branch/${newBranch.slug}`);
+		}
+	} catch (error) {
+		console.error(error);
+	}
 }
 
 const branches = await getAllBranches();
 // Sort by createdAt descending
-branches.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+branches.sort(
+	(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+);
 
 // Get state for each branch to show covers and counts
 const branchesWithState = await Promise.all(
-  branches.map(async (branch) => {
-    try {
-      const events = await getBranchEvents(branch.slug);
-      const state = projectBranchState(events);
-      const toRead = state.library.filter(i => i.status === 'ACCEPTED' || i.status === 'DEFERRED');
-      const read = state.library.filter(i => i.status === 'ALREADY_READ');
-      const covers = [...toRead, ...read]
-        .filter((item): item is typeof item & { metadata: { coverImageUrl: string } } =>
-          !!item.metadata?.coverImageUrl
-        )
-        .slice(0, 5); // Show up to 5 covers on index page
+	branches.map(async (branch) => {
+		try {
+			const events = await getBranchEvents(branch.slug);
+			const state = projectBranchState(events);
+			const toRead = state.library.filter(
+				(i) => i.status === "ACCEPTED" || i.status === "DEFERRED",
+			);
+			const read = state.library.filter((i) => i.status === "ALREADY_READ");
+			const covers = [...toRead, ...read]
+				.filter(
+					(
+						item,
+					): item is typeof item & { metadata: { coverImageUrl: string } } =>
+						!!item.metadata?.coverImageUrl,
+				)
+				.slice(0, 5); // Show up to 5 covers on index page
 
-      return {
-        ...branch,
-        toReadCount: toRead.length,
-        readCount: read.length,
-        covers,
-      };
-    } catch (error) {
-      // If there's an error loading state, just return branch without covers
-      return {
-        ...branch,
-        toReadCount: 0,
-        readCount: 0,
-        covers: [],
-      };
-    }
-  })
+			return {
+				...branch,
+				toReadCount: toRead.length,
+				readCount: read.length,
+				covers,
+			};
+		} catch (error) {
+			// If there's an error loading state, just return branch without covers
+			return {
+				...branch,
+				toReadCount: 0,
+				readCount: 0,
+				covers: [],
+			};
+		}
+	}),
 );
 ---
 

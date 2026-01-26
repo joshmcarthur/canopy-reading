@@ -1,23 +1,25 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import { getBranch, getBranchEvents } from '../../lib/dal';
-import { projectBranchState } from '../../domain/projection';
+import { projectBranchState } from "../../domain/projection";
+import Layout from "../../layouts/Layout.astro";
+import { getBranch, getBranchEvents } from "../../lib/dal";
 
 const { slug } = Astro.params;
 
 if (!slug) {
-  return Astro.redirect('/');
+	return Astro.redirect("/");
 }
 
 const branch = await getBranch(slug);
 if (!branch) {
-  return Astro.redirect('/404');
+	return Astro.redirect("/404");
 }
 
 const events = await getBranchEvents(slug);
 const state = projectBranchState(events);
-const toRead = state.library.filter(i => i.status === 'ACCEPTED' || i.status === 'DEFERRED');
-const read = state.library.filter(i => i.status === 'ALREADY_READ');
+const toRead = state.library.filter(
+	(i) => i.status === "ACCEPTED" || i.status === "DEFERRED",
+);
+const read = state.library.filter((i) => i.status === "ALREADY_READ");
 ---
 
 <Layout>
