@@ -23,56 +23,58 @@ branches.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).
 ---
 
 <Layout>
-  <main class="container mx-auto max-w-2xl py-12 px-4">
-    <header class="mb-12 text-center">
-      <h1 class="text-3xl font-serif font-bold mb-4">Canopy</h1>
-      <p class="text-gray-600 italic">Personal Reading System</p>
+  <main class="container mx-auto max-w-2xl py-12 px-6">
+    <header class="mb-16 text-center">
+      <h1 class="text-4xl font-serif font-bold mb-3 text-charcoal-900">Canopy</h1>
+      <p class="text-muted-foreground italic text-lg">Personal Reading System</p>
     </header>
 
-    <section class="mb-12">
-      <form method="POST" class="space-y-4 border p-6 rounded-lg bg-gray-50">
-        <h2 class="text-lg font-medium">New Inquiry</h2>
+    <section class="mb-16">
+      <form method="POST" class="space-y-6 border border-cream-300 p-8 rounded-lg bg-paper-100 shadow-cozy">
+        <h2 class="text-xl font-serif font-semibold text-charcoal-900">Start a New Reading Branch</h2>
         <div>
-          <label for="name" class="block text-sm font-medium mb-1">Topic / Title</label>
+          <label for="name" class="block text-sm font-medium mb-2 text-charcoal-800">Give it a name</label>
           <input 
             type="text" 
             id="name" 
             name="name" 
             required 
-            class="w-full px-3 py-2 border rounded-md"
+            class="w-full px-0 py-2.5 bg-transparent border-0 border-b-2 border-cream-300 rounded-none focus:outline-none focus:border-charcoal-900 text-charcoal-900 placeholder:text-muted-foreground transition-colors"
             placeholder="e.g. History of Coffee"
           />
         </div>
         <div>
-           <label for="description" class="block text-sm font-medium mb-1">Seed Prompt / Intent</label>
+           <label for="description" class="block text-sm font-medium mb-2 text-charcoal-800">What are you curious about?</label>
            <textarea 
              id="description" 
              name="description" 
              required 
              rows="3"
-             class="w-full px-3 py-2 border rounded-md"
-             placeholder="I want to understand the economic impact of coffee..."
+             class="w-full px-0 py-2.5 bg-transparent border-0 border-b-2 border-cream-300 rounded-none focus:outline-none focus:border-charcoal-900 text-charcoal-900 placeholder:text-muted-foreground transition-colors resize-none"
+             placeholder="I'm curious about the history and culture of coffee..."
            ></textarea>
         </div>
-        <button type="submit" class="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800">
+        <button type="submit" class="px-6 py-2.5 border border-cream-300 bg-transparent text-charcoal-900 rounded-md hover:bg-charcoal-900 hover:text-cream-50 focus:bg-charcoal-900 focus:text-cream-50 active:bg-charcoal-900 active:text-cream-50 transition-colors font-medium">
           Start Branch
         </button>
       </form>
     </section>
 
     <section>
-      <h2 class="text-xl font-serif border-b pb-2 mb-6">Open Branches</h2>
+      <h2 class="text-xl font-serif font-semibold border-b border-cream-300 pb-3 mb-8 text-charcoal-900">Open Branches</h2>
       
       {branches.length === 0 ? (
-        <p class="text-gray-500 text-center py-8">No branches yet.</p>
+        <div class="p-12 border border-dashed border-cream-300 rounded-lg text-center">
+          <p class="text-muted-foreground italic">No branches yet.</p>
+        </div>
       ) : (
-        <ul class="space-y-4">
+        <ul class="space-y-6">
           {branches.map(branch => (
             <li>
-              <a href={`/branch/${branch.slug}`} class="block p-4 border rounded-md hover:bg-gray-50 transition-colors group">
-                <h3 class="font-bold font-serif text-lg group-hover:underline">{branch.name}</h3>
-                <p class="text-gray-600 text-sm mt-1 line-clamp-2">{branch.description}</p>
-                <div class="mt-2 text-xs text-gray-400">
+              <a href={`/branch/${branch.slug}`} class="block p-6 border border-cream-300 rounded-lg bg-paper-100 hover:bg-paper-200 hover:shadow-cozy-md transition-all group">
+                <h3 class="font-bold font-serif text-lg group-hover:underline text-charcoal-900 mb-1">{branch.name}</h3>
+                <p class="text-muted-foreground text-sm mt-2 leading-relaxed line-clamp-2">{branch.description}</p>
+                <div class="mt-3 text-xs text-soft-gray">
                   Started {new Date(branch.createdAt).toLocaleDateString()}
                 </div>
               </a>
