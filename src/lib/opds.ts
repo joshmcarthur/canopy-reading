@@ -1,4 +1,4 @@
-import type { BookItem, Branch } from '../domain/types';
+import type { BookItem, Branch, RecommendationItem, BookMetadata } from '../domain/types';
 
 /**
  * OPDS 2.0 Type Definitions
@@ -72,6 +72,111 @@ function getOpenLibraryUrl(metadata?: { openLibraryWorkKey?: string; openLibrary
   }
 
   return null;
+}
+
+/**
+ * Extract ISBN from OPDS identifier (e.g., "urn:isbn:9780123456789")
+ */
+function extractISBN(identifier?: string): { isbn10?: string; isbn13?: string } {
+  if (!identifier) return {};
+  
+  const match = identifier.match(/^urn:isbn:(.+)$/i);
+  if (!match) return {};
+  
+  const isbn = match[1].replace(/-/g, '');
+  if (isbn.length === 13) {
+    return { isbn13: isbn };
+  } else if (isbn.length === 10) {
+    return { isbn10: isbn };
+  }
+  
+  return {};
+}
+
+/**
+ * Extract OpenLibrary keys from OPDS links
+ */
+function extractOpenLibraryKeys(links: OPDSLink[]): { openLibraryWorkKey?: string; openLibraryEditionKey?: string } {
+  const openLibraryLink = links.find(
+    link => link.rel === 'alternate' && link.href?.includes('openlibrary.org')
+  );
+  
+  if (!openLibraryLink?.href) return {};
+  
+  const url = new URL(openLibraryLink.href);
+  const path = url.pathname;
+  
+  if (path.startsWith('/works/')) {
+    return { openLibraryWorkKey: path };
+  } else if (path.startsWith('/books/')) {
+    return { openLibraryEditionKey: path };
+  }
+  
+  return {};
+}
+
+/**
+ * Extract cover image URL from OPDS images array
+ */
+function extractCoverImage(images?: Array<{ href: string; type: string }>): string | undefined {
+  if (!images || images.length === 0) return undefined;
+  return images[0].href;
+}
+
+/**
+ * Transform an OPDS Catalog to RecommendationItem[]
+ */
+export function opdsCatalogToRecommendationItems(catalog: OPDSCatalog): RecommendationItem[] {
+  if (!catalog.publications || !Array.isArray(catalog.publications)) {
+    return [];
+  }
+
+  const items: RecommendationItem[] = [];
+
+  for (const publication of catalog.publications) {
+    // Skip publications without titles
+    if (!publication.metadata?.title) {
+      continue;
+    }
+
+    const title = publication.metadata.title;
+
+    // Extract author(s) - join multiple authors with ", " or use first author
+    let author = 'Unknown Author';
+    if (publication.metadata.author && publication.metadata.author.length > 0) {
+      author = publication.metadata.author.map(a => a.name).join(', ');
+    }
+
+    // Extract description/reason - use description if available, otherwise generate default
+    const reason = publication.metadata.description || `Imported from OPDS catalog`;
+
+    // Extract ISBN from identifier
+    const isbnData = extractISBN(publication.metadata.identifier);
+    
+    // Extract cover image
+    const coverImageUrl = extractCoverImage(publication.images);
+
+    // Extract OpenLibrary keys from links
+    const openLibraryKeys = extractOpenLibraryKeys(publication.links || []);
+
+    // Build BookMetadata object
+    const metadata: BookMetadata = {
+      ...(coverImageUrl && { coverImageUrl }),
+      ...isbnData,
+      ...(publication.metadata.description && { description: publication.metadata.description }),
+      ...openLibraryKeys,
+    };
+
+    items.push({
+      title,
+      author,
+      reason,
+      ...(isbnData.isbn13 && { isbn: isbnData.isbn13 }),
+      metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+    });
+  }
+
+  return items;
 }
 
 /**

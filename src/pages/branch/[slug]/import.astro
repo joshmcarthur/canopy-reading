@@ -1,0 +1,171 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { getBranch } from '../../../lib/dal';
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/');
+}
+
+const branch = await getBranch(slug);
+if (!branch) {
+  return Astro.redirect('/404');
+}
+---
+
+<Layout>
+  <main class="container-wide py-8">
+    <div class="mb-8">
+      <a href={`/branch/${slug}`} class="text-sm text-muted-foreground hover:text-charcoal-900 transition-colors inline-flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        Back to {branch.name}
+      </a>
+    </div>
+
+    <header class="mb-12 border-b border-cream-300 pb-8">
+      <h1 class="text-4xl font-serif font-bold mb-4 text-charcoal-900">Import Books from OPDS</h1>
+      <p class="text-xl text-muted-foreground font-serif leading-relaxed max-w-3xl">
+        Upload an OPDS catalog file (JSON) to import books into your branch. You can select the status for all imported books.
+      </p>
+    </header>
+
+    <div class="max-w-2xl">
+      <form id="import-opds-form" enctype="multipart/form-data" class="space-y-6">
+        <div>
+          <label for="opds-file" class="block text-sm font-medium text-charcoal-900 mb-2">
+            OPDS File (JSON)
+          </label>
+          <input
+            type="file"
+            id="opds-file"
+            name="file"
+            accept=".json,application/json"
+            required
+            class="w-full px-3 py-2 border border-cream-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-charcoal-900 focus:border-transparent"
+          />
+          <p class="mt-2 text-xs text-muted-foreground">
+            Select an OPDS 2.0 catalog file in JSON format. You can export OPDS catalogs from other reading apps or services.
+          </p>
+        </div>
+
+        <div>
+          <label for="import-status" class="block text-sm font-medium text-charcoal-900 mb-2">
+            Status for Imported Books
+          </label>
+          <select
+            id="import-status"
+            name="status"
+            class="w-full px-3 py-2 border border-cream-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-charcoal-900 focus:border-transparent"
+          >
+            <option value="ALREADY_READ" selected>Already Read</option>
+            <option value="PENDING">Pending</option>
+            <option value="ACCEPTED">Accepted</option>
+            <option value="DEFERRED">Deferred</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+          <p class="mt-2 text-xs text-muted-foreground">
+            All imported books will be assigned this status. Default is "Already Read" for books you've already finished.
+          </p>
+        </div>
+
+        <div id="import-error" class="hidden text-sm text-red-600 bg-red-50 p-4 rounded border border-red-200"></div>
+        <div id="import-success" class="hidden text-sm text-green-600 bg-green-50 p-4 rounded border border-green-200"></div>
+
+        <div class="flex gap-3">
+          <a
+            href={`/branch/${slug}`}
+            class="px-6 py-2 text-sm border border-cream-300 rounded-md hover:bg-paper-100 transition-colors"
+          >
+            Cancel
+          </a>
+          <button
+            type="submit"
+            id="submit-import-btn"
+            class="px-6 py-2 text-sm bg-charcoal-900 text-white rounded-md hover:bg-charcoal-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <span id="import-btn-text">Import Books</span>
+            <svg id="import-spinner" class="w-4 h-4 animate-spin hidden" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+</Layout>
+
+<script define:vars={{ slug }}>
+  const importOpdsForm = document.getElementById('import-opds-form');
+  const importError = document.getElementById('import-error');
+  const importSuccess = document.getElementById('import-success');
+  const submitImportBtn = document.getElementById('submit-import-btn');
+  const importBtnText = document.getElementById('import-btn-text');
+  const importSpinner = document.getElementById('import-spinner');
+
+  if (importOpdsForm) {
+    importOpdsForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Hide previous messages
+      if (importError) importError.classList.add('hidden');
+      if (importSuccess) importSuccess.classList.add('hidden');
+
+      // Get form data
+      const formData = new FormData(importOpdsForm);
+      const fileInput = document.getElementById('opds-file');
+      
+      if (!fileInput || fileInput.type !== 'file' || !fileInput.files || fileInput.files.length === 0) {
+        if (importError) {
+          importError.textContent = 'Please select an OPDS file';
+          importError.classList.remove('hidden');
+        }
+        return;
+      }
+
+      // Add file to form data
+      formData.set('file', fileInput.files[0]);
+
+      // Show loading state
+      if (submitImportBtn) submitImportBtn.disabled = true;
+      if (importBtnText) importBtnText.textContent = 'Importing...';
+      if (importSpinner) importSpinner.classList.remove('hidden');
+
+      try {
+        const response = await fetch(`/api/branches/${slug}/import-opds`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Import failed');
+        }
+
+        // Show success message
+        if (importSuccess) {
+          importSuccess.textContent = `Successfully imported ${data.imported} book${data.imported === 1 ? '' : 's'}. Redirecting...`;
+          importSuccess.classList.remove('hidden');
+        }
+
+        // Redirect to branch page after a short delay
+        setTimeout(() => {
+          window.location.href = `/branch/${slug}`;
+        }, 1500);
+
+      } catch (error) {
+        console.error('Import error:', error);
+        if (importError) {
+          importError.textContent = error instanceof Error ? error.message : 'Failed to import OPDS catalog';
+          importError.classList.remove('hidden');
+        }
+        // Reset loading state
+        if (submitImportBtn) submitImportBtn.disabled = false;
+        if (importBtnText) importBtnText.textContent = 'Import Books';
+        if (importSpinner) importSpinner.classList.add('hidden');
+      }
+    });
+  }
+</script>

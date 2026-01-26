@@ -70,6 +70,7 @@ const read = state.library.filter(i => i.status === 'ALREADY_READ');
             </button>
           </div>
         </div>
+        </div>
       </div>
     </header>
 
@@ -120,7 +121,12 @@ const read = state.library.filter(i => i.status === 'ALREADY_READ');
         <!-- Shelf Section -->
         <section id="shelf-section">
           <div class="flex items-center justify-between mb-8">
-            <h2 class="text-2xl font-serif font-semibold text-charcoal-900">Your Shelf</h2>
+            <div class="flex items-center gap-4">
+              <h2 class="text-2xl font-serif font-semibold text-charcoal-900">Your Shelf</h2>
+              <a href={`/branch/${slug}/import`} class="text-sm text-muted-foreground hover:text-charcoal-900 transition-colors underline">
+                Import Books
+              </a>
+            </div>
             <a href={`/branch/${slug}/reflect`} class="px-4 py-2 border border-cream-300 rounded-md bg-transparent hover:bg-paper-200 focus:bg-charcoal-900 focus:text-cream-50 transition-colors font-medium text-sm">
               Write Reflection
             </a>
@@ -128,8 +134,16 @@ const read = state.library.filter(i => i.status === 'ALREADY_READ');
 
           {state.library.length === 0 ? (
              <div class="p-12 border border-dashed border-cream-300 rounded-lg text-center bg-paper-50">
-               <p class="text-muted-foreground italic">Your shelf is waiting for its first book.</p>
-               <p class="text-sm text-muted-foreground mt-2">Check the recommendations sidebar to add books.</p>
+               <p class="text-muted-foreground italic mb-4">Your shelf is waiting for its first book.</p>
+               <p class="text-sm text-muted-foreground mb-6">Get started by importing books from an OPDS catalog or generating recommendations.</p>
+               <div class="flex gap-3 justify-center">
+                 <a href={`/branch/${slug}/import`} class="px-6 py-2 bg-charcoal-900 text-white rounded-md hover:bg-charcoal-800 transition-colors font-medium text-sm">
+                   Import from OPDS
+                 </a>
+                 <button onclick="document.getElementById('generate-btn')?.click()" class="px-6 py-2 border border-cream-300 rounded-md bg-transparent hover:bg-paper-200 transition-colors font-medium text-sm">
+                   Generate Recommendations
+                 </button>
+               </div>
              </div>
           ) : (
             <div class="space-y-12">
