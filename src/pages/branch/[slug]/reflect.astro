@@ -1,0 +1,136 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { getBranch, getBranchEvents } from '../../../lib/dal';
+import { projectBranchState } from '../../../domain/projection';
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/');
+}
+
+const branch = await getBranch(slug);
+if (!branch) {
+  return Astro.redirect('/404');
+}
+
+const events = await getBranchEvents(slug);
+const state = projectBranchState(events);
+
+// Get itemTitle from query params
+const itemTitle = Astro.url.searchParams.get('itemTitle');
+const bookItem = itemTitle 
+  ? [...state.library, ...state.inbox].find(item => item.title === itemTitle)
+  : null;
+
+const isBookContext = !!itemTitle && !!bookItem;
+---
+
+<Layout>
+  <main class="container-wide py-8">
+    <div class="mb-8">
+      <a href={`/branch/${slug}`} class="text-sm text-muted-foreground hover:text-charcoal-900 transition-colors inline-flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        Back to {branch.name}
+      </a>
+    </div>
+
+    <div class="max-w-2xl mx-auto">
+      <header class="mb-8">
+        <h1 class="text-3xl font-serif font-bold mb-2 text-charcoal-900">
+          {isBookContext ? `Reflect on "${bookItem.title}"` : `Reflect on ${branch.name}`}
+        </h1>
+        {isBookContext && bookItem && (
+          <p class="text-muted-foreground">Share your thoughts to help improve future recommendations</p>
+        )}
+      </header>
+
+      {isBookContext && bookItem && (
+        <div class="mb-8 p-6 bg-paper-50 border border-cream-300 rounded-lg">
+          <div class="flex gap-6">
+            {bookItem.metadata?.coverImageUrl ? (
+              <img
+                src={bookItem.metadata.coverImageUrl}
+                alt={`Cover for ${bookItem.title}`}
+                class="w-24 h-36 object-cover rounded shadow-sm flex-shrink-0"
+              />
+            ) : (
+              <div class="w-24 h-36 bg-cream-200 rounded shadow-sm flex-shrink-0 flex items-center justify-center">
+                <svg class="w-8 h-8 text-cream-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+              </div>
+            )}
+            <div class="flex-1">
+              <h2 class="font-serif font-bold text-xl text-charcoal-900 mb-1">{bookItem.title}</h2>
+              <p class="text-muted-foreground mb-3">by {bookItem.author} {bookItem.metadata?.firstPublishYear && <span class="text-xs">({bookItem.metadata.firstPublishYear})</span>}</p>
+              {bookItem.reason && (
+                <p class="text-sm text-charcoal-700 leading-relaxed">{bookItem.reason}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <form 
+        method="POST" 
+        action={isBookContext ? `/api/branches/${slug}/status` : `/api/branches/${slug}/reflection`}
+        class="space-y-6"
+      >
+        {isBookContext && (
+          <input type="hidden" name="itemTitle" value={bookItem.title} />
+          <input type="hidden" name="status" value="ALREADY_READ" />
+        )}
+
+        <div>
+          <label for="reflection" class="block text-sm font-medium mb-2 text-charcoal-800">
+            {isBookContext ? 'What did you think?' : 'Share your thoughts'}
+          </label>
+          <textarea
+            id="reflection"
+            name={isBookContext ? "reflection" : "content"}
+            rows="8"
+            class="w-full px-4 py-3 bg-transparent border-2 border-cream-300 rounded-lg focus:outline-none focus:border-charcoal-900 text-charcoal-900 placeholder:text-muted-foreground transition-colors resize-none"
+            placeholder={isBookContext ? "What did you like about this book? What themes resonated with you? How did it relate to your reading goals?" : "What are you thinking about? What direction would you like this branch to go?"}
+          ></textarea>
+        </div>
+
+        <div class="flex gap-3">
+          {isBookContext ? (
+            <>
+              <button 
+                type="submit" 
+                class="flex-1 px-6 py-3 border border-charcoal-900 bg-charcoal-900 text-cream-50 rounded-md hover:bg-charcoal-800 focus:ring-2 focus:ring-offset-2 focus:ring-charcoal-900 transition-all font-medium"
+              >
+                Save & Mark Read
+              </button>
+              <form method="POST" action={`/api/branches/${slug}/status`} class="inline">
+                <input type="hidden" name="itemTitle" value={bookItem.title} />
+                <input type="hidden" name="status" value="ALREADY_READ" />
+                <button 
+                  type="submit" 
+                  class="px-6 py-3 border border-cream-300 rounded-md bg-transparent hover:bg-paper-200 focus:bg-charcoal-900 focus:text-cream-50 transition-colors font-medium"
+                >
+                  Skip & Mark Read
+                </button>
+              </form>
+            </>
+          ) : (
+            <button 
+              type="submit" 
+              class="flex-1 px-6 py-3 border border-charcoal-900 bg-charcoal-900 text-cream-50 rounded-md hover:bg-charcoal-800 focus:ring-2 focus:ring-offset-2 focus:ring-charcoal-900 transition-all font-medium"
+            >
+              Save Reflection
+            </button>
+          )}
+          <a 
+            href={`/branch/${slug}`}
+            class="px-6 py-3 border border-cream-300 rounded-md bg-transparent hover:bg-paper-200 focus:bg-charcoal-900 focus:text-cream-50 transition-colors font-medium inline-flex items-center justify-center"
+          >
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </main>
+</Layout>

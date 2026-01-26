@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { AppEvent, Branch, RecommendationItem, ItemStatusChangedEvent } from '../domain/types';
+import type { AppEvent, Branch, RecommendationItem, ItemStatusChangedEvent, ReflectionAddedEvent } from '../domain/types';
 import { projectBranchState } from '../domain/projection';
 import { searchBook } from './openlibrary';
 
@@ -29,12 +29,24 @@ export async function generateRecommendations(
 
   const state = projectBranchState(history);
   
+  // Extract reflections from history
+  const reflections = history.filter((e): e is ReflectionAddedEvent => e.type === 'REFLECTION_ADDED');
+  const reflectionsText = reflections.length > 0
+    ? reflections.map(r => {
+        if (r.payload.itemTitle) {
+          return `On "${r.payload.itemTitle}": ${r.payload.content}`;
+        }
+        return r.payload.content;
+      }).join('\n')
+    : 'None yet.';
+
   const systemPrompt = `You are a helpful reading assistant. 
   The user is looking for something to read, described as: "${branch.description}".
   
   Context:
   - Accepted Books: ${state.library.map(b => `${b.title} by ${b.author}`).join(', ')}
   - Rejected Books: ${history.filter((e): e is ItemStatusChangedEvent => e.type === 'ITEM_STATUS_CHANGED' && e.payload.status === 'REJECTED').map(e => e.payload.itemTitle).join(', ')}
+  - User Reflections: ${reflectionsText}
   
   Please suggest 3-5 relevant books.
   For each book, provide:

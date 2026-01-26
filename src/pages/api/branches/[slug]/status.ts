@@ -12,9 +12,23 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
   const formData = await request.formData();
   const itemTitle = formData.get('itemTitle')?.toString();
   const status = formData.get('status')?.toString() as ItemStatus;
+  const reflection = formData.get('reflection')?.toString();
 
   if (!itemTitle || !status) {
     return new Response('Missing itemTitle or status', { status: 400 });
+  }
+
+  // If reflection is provided, add it before the status change
+  if (reflection && reflection.trim().length > 0) {
+    await addEvent(slug, {
+      id: uuidv4(),
+      timestamp: new Date().toISOString(),
+      type: 'REFLECTION_ADDED',
+      payload: {
+        itemTitle,
+        content: reflection.trim(),
+      },
+    });
   }
 
   await addEvent(slug, {
