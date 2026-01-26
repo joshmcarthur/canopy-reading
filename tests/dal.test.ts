@@ -1,21 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import os from 'node:os';
-
-// Unique temp dir for this test run
-const TEST_DIR = path.join(os.tmpdir(), 'canopy-tests-' + Date.now());
+import { describe, it, expect, beforeAll } from 'vitest';
+import { resetAdapter } from '../src/lib/dal/factory';
 
 describe('Data Access Layer', () => {
-  beforeAll(async () => {
-    // Set env var before importing the DAL
-    process.env.CANOPY_DATA_DIR = TEST_DIR;
-    await fs.mkdir(TEST_DIR, { recursive: true });
-  });
-
-  afterAll(async () => {
-    // Clean up
-    await fs.rm(TEST_DIR, { recursive: true, force: true });
+  beforeAll(() => {
+    // Use memory adapter for tests
+    process.env.CANOPY_STORAGE_ADAPTER = 'memory';
+    // Reset adapter to ensure clean state
+    resetAdapter();
   });
 
   it('should create and retrieve a branch', async () => {
@@ -57,7 +48,7 @@ describe('Data Access Layer', () => {
       timestamp: new Date().toISOString(),
       type: 'RECOMMENDATIONS_REQUESTED',
       payload: { userNote: 'Looking for dragons.' }
-    }, 'User asked for dragons.');
+    });
 
     events = await getBranchEvents(branch.slug);
     expect(events).toHaveLength(2);

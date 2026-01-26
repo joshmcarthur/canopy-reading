@@ -1,0 +1,17 @@
+name = "canopy-reading"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = ".astro"
+
+[[durable_objects.bindings]]
+name = "BRANCH_DO"
+class_name = "BranchDO"
+script_name = "canopy-reading"
+
+[[durable_objects.bindings]]
+name = "BRANCH_REGISTRY_DO"
+class_name = "BranchRegistryDO"
+script_name = "canopy-reading"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["BranchDO", "BranchRegistryDO"]

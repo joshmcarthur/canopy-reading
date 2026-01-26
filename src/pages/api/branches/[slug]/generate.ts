@@ -20,7 +20,7 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
       timestamp: new Date().toISOString(),
       type: 'RECOMMENDATIONS_REQUESTED',
       payload: {}
-  }, 'User requested recommendations.');
+  });
 
   // If JSON request, return immediately and process in background
   // Note: In a true serverless environment (like Vercel/Netlify functions), 
@@ -49,7 +49,7 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
               items,
               model: 'gpt-4o'
           }
-      }, `# Recommendations Generated\n\n${items.map(i => `- **${i.title}** by ${i.author}: ${i.reason}`).join('\n')}`);
+      });
     } catch (error) {
       console.error('Error generating recommendations in background:', error);
     }

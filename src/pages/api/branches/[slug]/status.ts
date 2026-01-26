@@ -25,7 +25,7 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
           itemTitle,
           status
       }
-  }, `User changed status of "**${itemTitle}**" to \`${status}\``);
+  });
 
   // Auto-generation logic
   // Check if we need to replenish recommendations
@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
               timestamp: new Date().toISOString(),
               type: 'RECOMMENDATIONS_REQUESTED',
               payload: { userNote: 'Auto-generated due to low inbox' }
-          }, 'System auto-requested recommendations.');
+          });
 
           const items = await generateRecommendations(branch, events);
           
@@ -60,7 +60,7 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
                   items,
                   model: 'gpt-4o'
               }
-          }, `# Recommendations Generated (Auto)\n\n${items.map(i => `- **${i.title}** by ${i.author}: ${i.reason}`).join('\n')}`);
+          });
         }
       }
     } catch (error) {
