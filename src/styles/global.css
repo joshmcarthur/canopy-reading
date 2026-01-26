@@ -68,6 +68,89 @@
   }
 }
 
+@layer components {
+  /* Book covers preview - scrollbar hiding */
+  .book-covers-preview,
+  .book-covers-preview-compact {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .book-covers-preview::-webkit-scrollbar,
+  .book-covers-preview-compact::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Book cover item - rotation transforms */
+  .book-cover-item {
+    transform: rotate(-2deg);
+    transition: transform 0.2s ease;
+  }
+
+  .book-cover-item:nth-child(even) {
+    transform: rotate(2deg);
+  }
+
+  .book-cover-item:nth-child(3n) {
+    transform: rotate(-1deg);
+  }
+
+  .book-cover-item:hover {
+    transform: rotate(0deg) scale(1.05);
+    z-index: 10;
+  }
+
+  /* Compact variant - slightly different rotation */
+  .book-cover-item-compact {
+    transform: rotate(-1deg);
+    transition: transform 0.2s ease;
+  }
+
+  .book-cover-item-compact:nth-child(even) {
+    transform: rotate(1deg);
+  }
+
+  .book-cover-item-compact:hover {
+    transform: rotate(0deg) scale(1.05);
+    z-index: 10;
+  }
+
+  /* Fade gradient overlay */
+  .book-covers-fade {
+    background: linear-gradient(to left,
+      rgb(var(--background)) 0%,
+      rgba(var(--background), 0.95) 30%,
+      rgba(var(--background), 0.8) 60%,
+      transparent 100%
+    );
+  }
+
+  .book-covers-fade-compact {
+    background: linear-gradient(to left,
+      rgb(var(--background)) 0%,
+      rgba(var(--background), 0.95) 40%,
+      rgba(var(--background), 0.7) 70%,
+      transparent 100%
+    );
+  }
+
+  /* Fade in animation */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+}
+
 @layer utilities {
   /* Custom cozy shadows */
   .shadow-cozy {
@@ -76,5 +159,10 @@
   
   .shadow-cozy-md {
     box-shadow: 0 4px 6px -1px rgba(44, 42, 38, 0.08), 0 2px 4px -1px rgba(44, 42, 38, 0.04);
+  }
+
+  /* Full width container utilities */
+  .container-wide {
+    @apply max-w-7xl mx-auto px-6 sm:px-8;
   }
 }

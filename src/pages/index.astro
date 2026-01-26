@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getAllBranches, createBranch } from '../lib/dal';
+import { getAllBranches, createBranch, getBranchEvents } from '../lib/dal';
+import { projectBranchState } from '../domain/projection';
 
 if (Astro.request.method === 'POST') {
   try {
@@ -10,6 +11,7 @@ if (Astro.request.method === 'POST') {
 
     if (name && description) {
        const newBranch = await createBranch(name, description);
+
        return Astro.redirect(`/branch/${newBranch.slug}`);
     }
   } catch (error) {
@@ -20,68 +22,149 @@ if (Astro.request.method === 'POST') {
 const branches = await getAllBranches();
 // Sort by createdAt descending
 branches.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+// Get state for each branch to show covers and counts
+const branchesWithState = await Promise.all(
+  branches.map(async (branch) => {
+    try {
+      const events = await getBranchEvents(branch.slug);
+      const state = projectBranchState(events);
+      const toRead = state.library.filter(i => i.status === 'ACCEPTED' || i.status === 'DEFERRED');
+      const read = state.library.filter(i => i.status === 'ALREADY_READ');
+      const covers = [...toRead, ...read]
+        .filter((item): item is typeof item & { metadata: { coverImageUrl: string } } =>
+          !!item.metadata?.coverImageUrl
+        )
+        .slice(0, 5); // Show up to 5 covers on index page
+
+      return {
+        ...branch,
+        toReadCount: toRead.length,
+        readCount: read.length,
+        covers,
+      };
+    } catch (error) {
+      // If there's an error loading state, just return branch without covers
+      return {
+        ...branch,
+        toReadCount: 0,
+        readCount: 0,
+        covers: [],
+      };
+    }
+  })
+);
 ---
 
 <Layout>
-  <main class="container mx-auto max-w-2xl py-12 px-6">
-    <header class="mb-16 text-center">
+  <main class="container-wide py-12">
+    <header class="mb-16 text-center max-w-2xl mx-auto">
       <h1 class="text-4xl font-serif font-bold mb-3 text-charcoal-900">Canopy</h1>
       <p class="text-muted-foreground italic text-lg">Personal Reading System</p>
     </header>
 
-    <section class="mb-16">
-      <form method="POST" class="space-y-6 border border-cream-300 p-8 rounded-lg bg-paper-100 shadow-cozy">
-        <h2 class="text-xl font-serif font-semibold text-charcoal-900">Start a New Reading Branch</h2>
-        <div>
-          <label for="name" class="block text-sm font-medium mb-2 text-charcoal-800">Give it a name</label>
-          <input 
-            type="text" 
-            id="name" 
-            name="name" 
-            required 
-            class="w-full px-0 py-2.5 bg-transparent border-0 border-b-2 border-cream-300 rounded-none focus:outline-none focus:border-charcoal-900 text-charcoal-900 placeholder:text-muted-foreground transition-colors"
-            placeholder="e.g. History of Coffee"
-          />
-        </div>
-        <div>
-           <label for="description" class="block text-sm font-medium mb-2 text-charcoal-800">What are you curious about?</label>
-           <textarea 
-             id="description" 
-             name="description" 
-             required 
-             rows="3"
-             class="w-full px-0 py-2.5 bg-transparent border-0 border-b-2 border-cream-300 rounded-none focus:outline-none focus:border-charcoal-900 text-charcoal-900 placeholder:text-muted-foreground transition-colors resize-none"
-             placeholder="I'm curious about the history and culture of coffee..."
-           ></textarea>
-        </div>
-        <button type="submit" class="px-6 py-2.5 border border-cream-300 bg-transparent text-charcoal-900 rounded-md hover:bg-charcoal-900 hover:text-cream-50 focus:bg-charcoal-900 focus:text-cream-50 active:bg-charcoal-900 active:text-cream-50 transition-colors font-medium">
-          Start Branch
-        </button>
-      </form>
-    </section>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+      <!-- Create Branch Section -->
+      <section class="lg:col-span-5 lg:col-start-2">
+        <form method="POST" class="space-y-8 border border-cream-300 p-8 rounded-lg">
+          <div>
+            <h2 class="text-2xl font-serif font-semibold text-charcoal-900 mb-2">Start a New Branch</h2>
+            <p class="text-muted-foreground text-sm">Create a new space for your reading journey.</p>
+          </div>
 
-    <section>
-      <h2 class="text-xl font-serif font-semibold border-b border-cream-300 pb-3 mb-8 text-charcoal-900">Open Branches</h2>
-      
-      {branches.length === 0 ? (
-        <div class="p-12 border border-dashed border-cream-300 rounded-lg text-center">
-          <p class="text-muted-foreground italic">No branches yet.</p>
-        </div>
-      ) : (
-        <ul class="space-y-6">
-          {branches.map(branch => (
-            <li>
-              <a href={`/branch/${branch.slug}`} class="block p-6 border border-cream-300 rounded-lg bg-paper-100 hover:bg-paper-200 hover:shadow-cozy-md transition-all group">
-                <h3 class="font-bold font-serif text-lg group-hover:underline text-charcoal-900 mb-1">{branch.name}</h3>
-                <p class="text-muted-foreground text-sm mt-2 leading-relaxed line-clamp-2">{branch.description}</p>
-                <div class="mt-3 text-xs text-soft-gray">
-                  Started {new Date(branch.createdAt).toLocaleDateString()}
-                </div>
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+          <div class="space-y-6">
+            <div>
+              <label for="name" class="block text-sm font-medium mb-2 text-charcoal-800">Give it a name</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                required
+                class="w-full px-0 py-2.5 bg-transparent border-0 border-b-2 border-cream-300 rounded-none focus:outline-none focus:border-charcoal-900 text-charcoal-900 placeholder:text-muted-foreground transition-colors text-lg"
+                placeholder="e.g. History of Coffee"
+              />
+            </div>
+            <div>
+               <label for="description" class="block text-sm font-medium mb-2 text-charcoal-800">What are you curious about?</label>
+               <textarea
+                 id="description"
+                 name="description"
+                 required
+                 rows="3"
+                 class="w-full px-0 py-2.5 bg-transparent border-0 border-b-2 border-cream-300 rounded-none focus:outline-none focus:border-charcoal-900 text-charcoal-900 placeholder:text-muted-foreground transition-colors resize-none text-lg"
+                 placeholder="I'm curious about the history and culture of coffee..."
+               ></textarea>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full sm:w-auto px-8 py-3 border border-charcoal-900 bg-charcoal-900 text-cream-50 rounded-md hover:bg-charcoal-800 focus:ring-2 focus:ring-offset-2 focus:ring-charcoal-900 transition-all font-medium">
+            Start Branch
+          </button>
+        </form>
+      </section>
+
+      <!-- Existing Branches Section -->
+      <section class="lg:col-span-5">
+        <h2 class="text-xl font-serif font-semibold border-b border-cream-300 pb-3 mb-8 text-charcoal-900">Open Branches</h2>
+
+        {branchesWithState.length === 0 ? (
+          <div class="p-12 border border-dashed border-cream-300 rounded-lg text-center">
+            <p class="text-muted-foreground italic">No branches yet.</p>
+          </div>
+        ) : (
+          <ul class="grid grid-cols-1 gap-6">
+            {branchesWithState.map(branch => (
+              <li>
+                <a href={`/branch/${branch.slug}`} class="block p-6 border border-cream-300 rounded-lg hover:border-charcoal-400 hover:shadow-cozy transition-all group bg-white">
+                  <div class="flex justify-between items-start mb-2">
+                    <h3 class="font-bold font-serif text-lg group-hover:text-charcoal-700 text-charcoal-900">{branch.name}</h3>
+                    <span class="text-xs text-muted-foreground whitespace-nowrap ml-4">
+                      {new Date(branch.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p class="text-muted-foreground text-sm leading-relaxed line-clamp-2 mb-4">{branch.description}</p>
+
+                  {/* Book Covers Preview */}
+                  {(branch.covers.length > 0 || branch.toReadCount > 0 || branch.readCount > 0) && (
+                    <div class="mt-4 pt-4 border-t border-cream-200">
+                      {branch.covers.length > 0 && (
+                        <div class="relative mb-3">
+                          <div class="book-covers-preview-compact flex gap-2 overflow-x-auto pb-2">
+                            {branch.covers.map((item) => (
+                              <div class="book-cover-item-compact flex-shrink-0 relative">
+                                <img
+                                  src={item.metadata.coverImageUrl}
+                                  alt={`${item.title} cover`}
+                                  class="w-16 h-24 object-cover rounded shadow-sm border border-cream-300 hover:border-sage-400 transition-all"
+                                  loading="lazy"
+                                  title={`${item.title} by ${item.author}`}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          {/* Fade gradient overlay */}
+                          {branch.covers.length >= 5 && (
+                            <div class="book-covers-fade-compact absolute right-0 top-0 bottom-2 w-16 pointer-events-none"></div>
+                          )}
+                        </div>
+                      )}
+                      <p class="text-xs text-muted-foreground">
+                        {branch.toReadCount > 0 && (
+                          <span>{branch.toReadCount} {branch.toReadCount === 1 ? 'book' : 'books'} to read</span>
+                        )}
+                        {branch.toReadCount > 0 && branch.readCount > 0 && <span> • </span>}
+                        {branch.readCount > 0 && (
+                          <span>{branch.readCount} {branch.readCount === 1 ? 'book' : 'books'} read</span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   </main>
 </Layout>
