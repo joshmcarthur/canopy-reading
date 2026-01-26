@@ -27,10 +27,31 @@ export interface RecommendationsRequestedEvent extends BaseEvent {
   };
 }
 
+export interface BookMetadata {
+  coverImageUrl?: string;
+  coverImageSmallUrl?: string;
+  coverImageMediumUrl?: string;
+  coverImageLargeUrl?: string;
+  isbn10?: string;
+  isbn13?: string;
+  description?: string;
+  firstPublishYear?: number;
+  publishDate?: string;
+  numberOfPages?: number;
+  publisher?: string[];
+  language?: string[];
+  openLibraryWorkKey?: string;
+  openLibraryEditionKey?: string;
+  authorKeys?: string[];
+  enrichedAt?: string; // ISO timestamp
+}
+
 export interface RecommendationItem {
   title: string;
   author: string;
   reason: string;
+  isbn?: string; // ISBN provided by AI (if available)
+  metadata?: BookMetadata; // Enriched metadata from OpenLibrary
 }
 
 export interface RecommendationsGeneratedEvent extends BaseEvent {
@@ -90,6 +111,7 @@ export interface BookItem {
   reason: string;
   status: ItemStatus;
   addedAt: string; // ISO8601
+  metadata?: BookMetadata; // Enriched metadata from OpenLibrary
 }
 
 export interface BranchState {

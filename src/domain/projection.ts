@@ -24,6 +24,7 @@ export function projectBranchState(events: AppEvent[]): BranchState {
           reason: item.reason,
           status: 'PENDING',
           addedAt: event.timestamp,
+          metadata: item.metadata, // Preserve metadata from enrichment
         }));
         
         // Check for duplicates? For now, just add.

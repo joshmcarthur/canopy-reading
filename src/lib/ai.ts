@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
-import type { AppEvent, Branch, RecommendationItem } from '../domain/types';
+import type { AppEvent, Branch, RecommendationItem, ItemStatusChangedEvent } from '../domain/types';
 import { projectBranchState } from '../domain/projection';
+import { searchBook } from './openlibrary';
 
 // Initialize OpenAI only if key is present
 const apiKey = process.env.OPENAI_API_KEY;
@@ -33,13 +34,14 @@ export async function generateRecommendations(
   
   Context:
   - Accepted Books: ${state.library.map(b => `${b.title} by ${b.author}`).join(', ')}
-  - Rejected Books: ${history.filter(e => e.type === 'ITEM_STATUS_CHANGED' && e.payload.status === 'REJECTED').map(e => e.payload.itemTitle).join(', ')}
+  - Rejected Books: ${history.filter((e): e is ItemStatusChangedEvent => e.type === 'ITEM_STATUS_CHANGED' && e.payload.status === 'REJECTED').map(e => e.payload.itemTitle).join(', ')}
   
   Please suggest 3-5 relevant books.
   For each book, provide:
   - title
   - author
   - reason (a brief explanation of why it fits what they're looking for)
+  - isbn (if available - this helps with accurate book matching)
   
   Respond in JSON format with a list of objects under the key "items".
   `;
@@ -59,5 +61,24 @@ export async function generateRecommendations(
   }
 
   const result = JSON.parse(content);
-  return result.items as RecommendationItem[];
+  const items = result.items as RecommendationItem[];
+
+  // Enrich each recommendation with OpenLibrary metadata
+  const enrichedItems = await Promise.all(
+    items.map(async (item) => {
+      try {
+        const metadata = await searchBook(item.title, item.author, item.isbn);
+        if (metadata) {
+          return { ...item, metadata };
+        }
+        return item;
+      } catch (error) {
+        // If enrichment fails, continue without metadata
+        console.error(`Failed to enrich book "${item.title}":`, error);
+        return item;
+      }
+    })
+  );
+
+  return enrichedItems;
 }

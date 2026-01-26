@@ -124,4 +124,85 @@ describe('Branch State Projection', () => {
     expect(state.inbox).toHaveLength(0);
     expect(state.library).toHaveLength(0);
   });
+
+  it('should preserve metadata when projecting recommendations', () => {
+    const events: AppEvent[] = [
+      {
+        id: '1',
+        timestamp: '2023-01-01T00:00:00Z',
+        type: 'RECOMMENDATIONS_GENERATED',
+        payload: {
+          items: [
+            {
+              title: 'Book with Metadata',
+              author: 'Author Name',
+              reason: 'Great book',
+              isbn: '9780123456789',
+              metadata: {
+                coverImageUrl: 'https://covers.openlibrary.org/b/id/1234567-M.jpg',
+                coverImageSmallUrl: 'https://covers.openlibrary.org/b/id/1234567-S.jpg',
+                coverImageMediumUrl: 'https://covers.openlibrary.org/b/id/1234567-M.jpg',
+                coverImageLargeUrl: 'https://covers.openlibrary.org/b/id/1234567-L.jpg',
+                isbn10: '0123456789',
+                isbn13: '9780123456789',
+                firstPublishYear: 2020,
+                numberOfPages: 300,
+                openLibraryWorkKey: '/works/OL123W',
+                enrichedAt: '2023-01-01T00:00:00Z',
+              },
+            },
+          ],
+          model: 'gpt-4',
+        },
+      },
+    ];
+
+    const state = projectBranchState(events);
+    expect(state.inbox).toHaveLength(1);
+    expect(state.inbox[0].metadata).toBeDefined();
+    expect(state.inbox[0].metadata?.coverImageUrl).toBe('https://covers.openlibrary.org/b/id/1234567-M.jpg');
+    expect(state.inbox[0].metadata?.isbn13).toBe('9780123456789');
+    expect(state.inbox[0].metadata?.firstPublishYear).toBe(2020);
+  });
+
+  it('should preserve metadata when moving items to library', () => {
+    const events: AppEvent[] = [
+      {
+        id: '1',
+        timestamp: '2023-01-01T00:00:00Z',
+        type: 'RECOMMENDATIONS_GENERATED',
+        payload: {
+          items: [
+            {
+              title: 'Book with Metadata',
+              author: 'Author Name',
+              reason: 'Great book',
+              metadata: {
+                coverImageUrl: 'https://covers.openlibrary.org/b/id/1234567-M.jpg',
+                isbn13: '9780123456789',
+                enrichedAt: '2023-01-01T00:00:00Z',
+              },
+            },
+          ],
+          model: 'gpt-4',
+        },
+      },
+      {
+        id: '2',
+        timestamp: '2023-01-02T00:00:00Z',
+        type: 'ITEM_STATUS_CHANGED',
+        payload: {
+          itemTitle: 'Book with Metadata',
+          status: 'ACCEPTED',
+        },
+      },
+    ];
+
+    const state = projectBranchState(events);
+    expect(state.inbox).toHaveLength(0);
+    expect(state.library).toHaveLength(1);
+    expect(state.library[0].metadata).toBeDefined();
+    expect(state.library[0].metadata?.coverImageUrl).toBe('https://covers.openlibrary.org/b/id/1234567-M.jpg');
+    expect(state.library[0].metadata?.isbn13).toBe('9780123456789');
+  });
 });
