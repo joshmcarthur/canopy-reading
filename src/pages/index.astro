@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import { getAllBranches, createBranch, getBranchEvents } from '../lib/dal';
 import { projectBranchState } from '../domain/projection';
+import canopyLogo from '../assets/canopy.png';
 
 if (Astro.request.method === 'POST') {
   try {
@@ -59,6 +60,7 @@ const branchesWithState = await Promise.all(
 <Layout>
   <main class="container-wide py-12">
     <header class="mb-16 text-center max-w-2xl mx-auto">
+      <img src={canopyLogo.src} alt="Canopy Logo" class="mx-auto mb-4 max-w-32 h-auto" />
       <h1 class="text-4xl font-serif font-bold mb-3 text-charcoal-900">Canopy</h1>
       <p class="text-muted-foreground italic text-lg">Personal Reading System</p>
     </header>
@@ -66,7 +68,7 @@ const branchesWithState = await Promise.all(
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
       <!-- Create Branch Section -->
       <section class="lg:col-span-5 lg:col-start-2">
-        <form method="POST" class="space-y-8 border border-cream-300 p-8 rounded-lg">
+        <form method="POST" class="space-y-8 bg-paper-50 border border-cream-300 p-8 rounded-xl shadow-sm hover:shadow-cozy transition-shadow">
           <div>
             <h2 class="text-2xl font-serif font-semibold text-charcoal-900 mb-2">Start a New Branch</h2>
             <p class="text-muted-foreground text-sm">Create a new space for your reading journey.</p>
