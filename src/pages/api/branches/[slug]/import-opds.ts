@@ -74,7 +74,7 @@ export const POST: APIRoute = async ({ params, request }) => {
 		}
 
 		// Validate OPDS catalog structure
-		if (!catalog.publications || !Array.isArray(catalog.publications)) {
+		if (!catalog.publications?.length || !Array.isArray(catalog.publications)) {
 			return new Response(
 				JSON.stringify({
 					error: "Invalid OPDS catalog structure. Missing publications array.",

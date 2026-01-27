@@ -531,7 +531,7 @@ describe("OPDS API Integration", () => {
 
 			expect(response.status).toBe(400);
 			const data = (await response.json()) as { error: string };
-			expect(data.error).toBe("No valid books found in OPDS catalog");
+			expect(data.error).toBe("Invalid OPDS catalog structure. Missing publications array.");
 		});
 
 		it("should return 400 if status is invalid", async () => {
