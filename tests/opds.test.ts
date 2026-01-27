@@ -1,8 +1,8 @@
-import type { APIContext } from "astro";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { AppEvent, BookItem, Branch } from "../src/domain/types";
 import { resetAdapter } from "../src/lib/dal/factory";
-import type { OPDSLink, OPDSPublication } from "../src/lib/opds";
+import type { OPDSCatalog, OPDSLink, OPDSPublication } from "../src/lib/opds";
+import { createTestContext } from "./integration/helpers";
 
 // Mock the DAL module
 vi.mock("../src/lib/dal/index", () => ({
@@ -87,10 +87,12 @@ describe("OPDS API Endpoint", () => {
 		const { GET } = await import("../src/pages/api/branches/[slug]/opds");
 		const request = new Request("http://localhost/api/branches/test/opds");
 
-		const response = await GET({
-			params: {},
-			request,
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: {},
+				request,
+			}),
+		);
 
 		expect(response.status).toBe(400);
 		expect(await response.text()).toBe("Slug required");
@@ -105,10 +107,12 @@ describe("OPDS API Endpoint", () => {
 			"http://localhost/api/branches/nonexistent/opds",
 		);
 
-		const response = await GET({
-			params: { slug: "nonexistent" },
-			request,
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: "nonexistent" },
+				request,
+			}),
+		);
 
 		expect(response.status).toBe(404);
 		expect(await response.text()).toBe("Branch not found");
@@ -135,16 +139,18 @@ describe("OPDS API Endpoint", () => {
 			"http://localhost/api/branches/test-branch/opds",
 		);
 
-		const response = await GET({
-			params: { slug: "test-branch" },
-			request,
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: "test-branch" },
+				request,
+			}),
+		);
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("Content-Type")).toBe("application/opds+json");
 		expect(response.headers.get("Cache-Control")).toBe("public, max-age=3600");
 
-		const catalog = await response.json();
+		const catalog = (await response.json()) as OPDSCatalog;
 
 		// Verify catalog structure
 		expect(catalog).toHaveProperty("metadata");
@@ -161,10 +167,10 @@ describe("OPDS API Endpoint", () => {
 			(link: OPDSLink) => link.rel === "self",
 		);
 		expect(selfLink).toBeDefined();
-		expect(selfLink.href).toBe(
+		expect(selfLink?.href).toBe(
 			"http://localhost/api/branches/test-branch/opds",
 		);
-		expect(selfLink.type).toBe("application/opds+json");
+		expect(selfLink?.type).toBe("application/opds+json");
 
 		// Verify publications
 		expect(catalog.publications).toHaveLength(2);
@@ -190,12 +196,14 @@ describe("OPDS API Endpoint", () => {
 			"http://localhost/api/branches/test-branch/opds",
 		);
 
-		const response = await GET({
-			params: { slug: "test-branch" },
-			request,
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: "test-branch" },
+				request,
+			}),
+		);
 
-		const catalog = await response.json();
+		const catalog = (await response.json()) as OPDSCatalog;
 
 		// Should only include ACCEPTED and DEFERRED
 		expect(catalog.publications).toHaveLength(2);
@@ -237,12 +245,14 @@ describe("OPDS API Endpoint", () => {
 			"http://localhost/api/branches/test-branch/opds",
 		);
 
-		const response = await GET({
-			params: { slug: "test-branch" },
-			request,
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: "test-branch" },
+				request,
+			}),
+		);
 
-		const catalog = await response.json();
+		const catalog = (await response.json()) as OPDSCatalog;
 		const publication = catalog.publications[0];
 
 		// Verify publication structure
@@ -258,8 +268,8 @@ describe("OPDS API Endpoint", () => {
 		// Verify images
 		expect(publication.images).toBeDefined();
 		expect(publication.images).toHaveLength(1);
-		expect(publication.images[0].href).toBe("https://example.com/cover.jpg");
-		expect(publication.images[0].type).toBe("image/jpeg");
+		expect(publication.images?.[0].href).toBe("https://example.com/cover.jpg");
+		expect(publication.images?.[0].type).toBe("image/jpeg");
 
 		// Verify links
 		expect(publication.links).toBeDefined();
@@ -270,14 +280,14 @@ describe("OPDS API Endpoint", () => {
 			link.href.includes("openlibrary.org"),
 		);
 		expect(openLibraryLink).toBeDefined();
-		expect(openLibraryLink.href).toBe("https://openlibrary.org/works/OL123W");
+		expect(openLibraryLink?.href).toBe("https://openlibrary.org/works/OL123W");
 
 		// Should have branch page link
 		const branchLink = publication.links.find((link: OPDSLink) =>
 			link.href.includes("/branch/test-branch"),
 		);
 		expect(branchLink).toBeDefined();
-		expect(branchLink.href).toBe("http://localhost/branch/test-branch");
+		expect(branchLink?.href).toBe("http://localhost/branch/test-branch");
 	});
 
 	it("should handle books without metadata gracefully", async () => {
@@ -294,12 +304,14 @@ describe("OPDS API Endpoint", () => {
 			"http://localhost/api/branches/test-branch/opds",
 		);
 
-		const response = await GET({
-			params: { slug: "test-branch" },
-			request,
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: "test-branch" },
+				request,
+			}),
+		);
 
-		const catalog = await response.json();
+		const catalog = (await response.json()) as OPDSCatalog;
 		const publication = catalog.publications[0];
 
 		expect(publication.metadata.title).toBe("Simple Book");
@@ -327,12 +339,14 @@ describe("OPDS API Endpoint", () => {
 			"http://localhost/api/branches/test-branch/opds",
 		);
 
-		const response = await GET({
-			params: { slug: "test-branch" },
-			request,
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: "test-branch" },
+				request,
+			}),
+		);
 
-		const catalog = await response.json();
+		const catalog = (await response.json()) as OPDSCatalog;
 
 		expect(catalog.publications).toHaveLength(0);
 		expect(catalog.metadata.title).toBe("Test Branch");
@@ -347,13 +361,15 @@ describe("OPDS API Endpoint", () => {
 			"http://localhost/api/branches/test-branch/opds",
 		);
 
-		const response = await GET({
-			params: { slug: "test-branch" },
-			request,
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: "test-branch" },
+				request,
+			}),
+		);
 
 		expect(response.status).toBe(500);
-		const error = await response.json();
+		const error = (await response.json()) as { error: string };
 		expect(error.error).toBe("Failed to generate OPDS feed");
 	});
 
@@ -381,17 +397,19 @@ describe("OPDS API Endpoint", () => {
 			"http://localhost/api/branches/test-branch/opds",
 		);
 
-		const response = await GET({
-			params: { slug: "test-branch" },
-			request,
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: "test-branch" },
+				request,
+			}),
+		);
 
-		const catalog = await response.json();
+		const catalog = (await response.json()) as OPDSCatalog;
 		const publication = catalog.publications[0];
 
 		// Should use largeUrl as fallback
 		expect(publication.images).toBeDefined();
-		expect(publication.images[0].href).toBe("https://example.com/large.jpg");
+		expect(publication.images?.[0].href).toBe("https://example.com/large.jpg");
 	});
 
 	it("should prefer openLibraryWorkKey over openLibraryEditionKey", async () => {
@@ -411,17 +429,20 @@ describe("OPDS API Endpoint", () => {
 			"http://localhost/api/branches/test-branch/opds",
 		);
 
-		const response = await GET({
-			params: { slug: "test-branch" },
-			request,
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: "test-branch" },
+				request,
+			}),
+		);
 
-		const catalog = await response.json();
+		const catalog = (await response.json()) as OPDSCatalog;
 		const publication = catalog.publications[0];
 
 		const openLibraryLink = publication.links.find((link: OPDSLink) =>
 			link.href.includes("openlibrary.org"),
 		);
-		expect(openLibraryLink.href).toBe("https://openlibrary.org/works/OL123W");
+		expect(openLibraryLink).toBeDefined();
+		expect(openLibraryLink?.href).toBe("https://openlibrary.org/works/OL123W");
 	});
 });

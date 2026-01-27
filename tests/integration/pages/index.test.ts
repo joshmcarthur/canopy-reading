@@ -21,14 +21,8 @@ describe("Index Page Integration", () => {
 	});
 
 	it("should return all branches", async () => {
-		const branch1 = await createTestBranch(
-			"History of Coffee",
-			"Learning about coffee",
-		);
-		const branch2 = await createTestBranch(
-			"Science Fiction",
-			"Exploring sci-fi",
-		);
+		await createTestBranch("History of Coffee", "Learning about coffee");
+		await createTestBranch("Science Fiction", "Exploring sci-fi");
 
 		const branches = await getAllBranches();
 		expect(branches.length).toBeGreaterThanOrEqual(2);

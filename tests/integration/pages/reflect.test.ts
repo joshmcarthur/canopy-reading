@@ -1,4 +1,3 @@
-import type { APIContext } from "astro";
 import { beforeEach, describe, expect, it } from "vitest";
 import { projectBranchState } from "../../../src/domain/projection";
 import { getBranchEvents } from "../../../src/lib/dal";
@@ -7,6 +6,7 @@ import {
 	createRecommendationsGeneratedEvent,
 	createStatusChangedEvent,
 	createTestBranch,
+	createTestContext,
 	resetStorage,
 } from "../helpers";
 
@@ -21,9 +21,12 @@ describe("Reflect Page Integration", () => {
 		const { GET } = await import(
 			"../../../src/pages/api/branches/[slug]/state"
 		);
-		const response = await GET({
-			params: { slug: branch.slug },
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: new Request("http://localhost"),
+			}),
+		);
 
 		expect(response.status).toBe(200);
 		const state = await response.json();
@@ -76,12 +79,12 @@ describe("Reflect Page Integration", () => {
 			},
 		);
 
-		const response = await POST({
-			params: { slug: branch.slug },
-			request,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		const response = await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request,
+			}),
+		);
 
 		// Should redirect to branch page
 		expect(response.status).toBe(302);
@@ -134,12 +137,12 @@ describe("Reflect Page Integration", () => {
 			},
 		);
 
-		const response = await POST({
-			params: { slug: branch.slug },
-			request,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		const response = await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request,
+			}),
+		);
 
 		expect(response.status).toBe(302);
 

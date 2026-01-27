@@ -292,7 +292,7 @@ export function bookItemToOPDSPublication(
 export function branchToOPDSCatalog(
 	branch: Branch,
 	publications: OPDSPublication[],
-	baseUrl: string,
+	_baseUrl: string,
 	opdsFeedUrl: string,
 ): OPDSCatalog {
 	const links: OPDSLink[] = [

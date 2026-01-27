@@ -1,4 +1,3 @@
-import type { APIContext } from "astro";
 import { beforeEach, describe, expect, it } from "vitest";
 import { projectBranchState } from "../../../src/domain/projection";
 import { getBranchEvents } from "../../../src/lib/dal";
@@ -7,6 +6,7 @@ import {
 	createRecommendationsGeneratedEvent,
 	createStatusChangedEvent,
 	createTestBranch,
+	createTestContext,
 	resetStorage,
 } from "../helpers";
 
@@ -27,10 +27,12 @@ describe("Status API Integration", () => {
 			body: formData,
 		});
 
-		const response = await POST({
-			params: {},
-			request,
-		} as APIContext);
+		const response = await POST(
+			createTestContext({
+				params: {},
+				request,
+			}),
+		);
 
 		expect(response.status).toBe(400);
 	});
@@ -53,10 +55,12 @@ describe("Status API Integration", () => {
 			},
 		);
 
-		const response1 = await POST({
-			params: { slug: branch.slug },
-			request: request1,
-		} as APIContext);
+		const response1 = await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: request1,
+			}),
+		);
 		expect(response1.status).toBe(400);
 
 		// Missing status
@@ -70,10 +74,12 @@ describe("Status API Integration", () => {
 			},
 		);
 
-		const response2 = await POST({
-			params: { slug: branch.slug },
-			request: request2,
-		} as APIContext);
+		const response2 = await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: request2,
+			}),
+		);
 		expect(response2.status).toBe(400);
 	});
 
@@ -111,12 +117,12 @@ describe("Status API Integration", () => {
 			},
 		);
 
-		const response = await POST({
-			params: { slug: branch.slug },
-			request,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		const response = await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request,
+			}),
+		);
 
 		// Should redirect to branch page
 		expect(response.status).toBe(302);
@@ -159,12 +165,12 @@ describe("Status API Integration", () => {
 			},
 		);
 
-		const response = await POST({
-			params: { slug: branch.slug },
-			request,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		const response = await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request,
+			}),
+		);
 
 		expect(response.status).toBe(302);
 
@@ -200,12 +206,12 @@ describe("Status API Integration", () => {
 			},
 		);
 
-		const response = await POST({
-			params: { slug: branch.slug },
-			request,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		const response = await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request,
+			}),
+		);
 
 		expect(response.status).toBe(302);
 
@@ -247,12 +253,12 @@ describe("Status API Integration", () => {
 			},
 		);
 
-		const response = await POST({
-			params: { slug: branch.slug },
-			request,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		const response = await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request,
+			}),
+		);
 
 		expect(response.status).toBe(302);
 
@@ -307,12 +313,12 @@ describe("Status API Integration", () => {
 			},
 		);
 
-		const response = await POST({
-			params: { slug: branch.slug },
-			request,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		const response = await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request,
+			}),
+		);
 
 		expect(response.status).toBe(302);
 

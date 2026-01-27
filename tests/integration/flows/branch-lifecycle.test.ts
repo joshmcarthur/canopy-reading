@@ -1,8 +1,11 @@
-import type { APIContext } from "astro";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { projectBranchState } from "../../../src/domain/projection";
+import type {
+	ItemStatusChangedEvent,
+	ReflectionAddedEvent,
+} from "../../../src/domain/types";
 import { getBranchEvents } from "../../../src/lib/dal";
-import { createTestBranch, resetStorage } from "../helpers";
+import { createTestBranch, createTestContext, resetStorage } from "../helpers";
 
 // Mock the AI generation function
 vi.mock("../../../src/lib/ai", async () => {
@@ -52,12 +55,12 @@ describe("Branch Lifecycle E2E Flow", () => {
 			},
 		);
 
-		const generateResponse = await POST({
-			params: { slug: branch.slug },
-			request: generateRequest,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		const generateResponse = await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: generateRequest,
+			}),
+		);
 
 		expect(generateResponse.status).toBe(302);
 
@@ -84,12 +87,12 @@ describe("Branch Lifecycle E2E Flow", () => {
 			},
 		);
 
-		const acceptResponse = await statusPOST({
-			params: { slug: branch.slug },
-			request: acceptRequest,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		const acceptResponse = await statusPOST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: acceptRequest,
+			}),
+		);
 
 		expect(acceptResponse.status).toBe(302);
 
@@ -118,12 +121,12 @@ describe("Branch Lifecycle E2E Flow", () => {
 			},
 		);
 
-		const readResponse = await statusPOST({
-			params: { slug: branch.slug },
-			request: readRequest,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		const readResponse = await statusPOST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: readRequest,
+			}),
+		);
 
 		expect(readResponse.status).toBe(302);
 
@@ -141,7 +144,9 @@ describe("Branch Lifecycle E2E Flow", () => {
 		// Should have at least ACCEPTED and ALREADY_READ status changes
 		expect(statusEvents.length).toBeGreaterThanOrEqual(2);
 		// The last status change should be ALREADY_READ
-		const lastStatusEvent = statusEvents[statusEvents.length - 1];
+		const lastStatusEvent = statusEvents[
+			statusEvents.length - 1
+		] as ItemStatusChangedEvent;
 		expect(lastStatusEvent?.payload.status).toBe("ALREADY_READ");
 
 		// Project state from all events
@@ -162,8 +167,8 @@ describe("Branch Lifecycle E2E Flow", () => {
 		const reflectionEvents = events.filter(
 			(e) =>
 				e.type === "REFLECTION_ADDED" &&
-				e.payload.itemTitle === "The Test Book",
-		);
+				(e as ReflectionAddedEvent).payload.itemTitle === "The Test Book",
+		) as ReflectionAddedEvent[];
 		expect(reflectionEvents.length).toBeGreaterThan(0);
 		expect(reflectionEvents[reflectionEvents.length - 1].payload.content).toBe(
 			"This was an excellent book!",
@@ -177,8 +182,8 @@ describe("Branch Lifecycle E2E Flow", () => {
 		const finalStatusEvents = events.filter(
 			(e) =>
 				e.type === "ITEM_STATUS_CHANGED" &&
-				e.payload.itemTitle === "The Test Book",
-		);
+				(e as ItemStatusChangedEvent).payload.itemTitle === "The Test Book",
+		) as ItemStatusChangedEvent[];
 		const alreadyReadEvent = finalStatusEvents.find(
 			(e) => e.payload.status === "ALREADY_READ",
 		);
@@ -190,10 +195,12 @@ describe("Branch Lifecycle E2E Flow", () => {
 			`http://localhost/api/branches/${branch.slug}/opds`,
 		);
 
-		const opdsResponse = await GET({
-			params: { slug: branch.slug },
-			request: opdsRequest,
-		} as APIContext);
+		const opdsResponse = await GET(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: opdsRequest,
+			}),
+		);
 
 		expect(opdsResponse.status).toBe(200);
 		const opds = await opdsResponse.json();
@@ -214,15 +221,15 @@ describe("Branch Lifecycle E2E Flow", () => {
 		const { POST: generatePOST } = await import(
 			"../../../src/pages/api/branches/[slug]/generate"
 		);
-		await generatePOST({
-			params: { slug: branch.slug },
-			request: new Request(
-				`http://localhost/api/branches/${branch.slug}/generate`,
-				{ method: "POST" },
-			),
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		await generatePOST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: new Request(
+					`http://localhost/api/branches/${branch.slug}/generate`,
+					{ method: "POST" },
+				),
+			}),
+		);
 
 		// Accept first book
 		const { POST: statusPOST } = await import(
@@ -231,35 +238,35 @@ describe("Branch Lifecycle E2E Flow", () => {
 		const acceptForm1 = new FormData();
 		acceptForm1.append("itemTitle", "The Test Book");
 		acceptForm1.append("status", "ACCEPTED");
-		await statusPOST({
-			params: { slug: branch.slug },
-			request: new Request(
-				`http://localhost/api/branches/${branch.slug}/status`,
-				{
-					method: "POST",
-					body: acceptForm1,
-				},
-			),
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		await statusPOST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: new Request(
+					`http://localhost/api/branches/${branch.slug}/status`,
+					{
+						method: "POST",
+						body: acceptForm1,
+					},
+				),
+			}),
+		);
 
 		// Defer second book
 		const deferForm = new FormData();
 		deferForm.append("itemTitle", "Another Book");
 		deferForm.append("status", "DEFERRED");
-		await statusPOST({
-			params: { slug: branch.slug },
-			request: new Request(
-				`http://localhost/api/branches/${branch.slug}/status`,
-				{
-					method: "POST",
-					body: deferForm,
-				},
-			),
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		await statusPOST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: new Request(
+					`http://localhost/api/branches/${branch.slug}/status`,
+					{
+						method: "POST",
+						body: deferForm,
+					},
+				),
+			}),
+		);
 
 		// Verify state
 		const events = await getBranchEvents(branch.slug);
@@ -275,10 +282,14 @@ describe("Branch Lifecycle E2E Flow", () => {
 
 		// Verify OPDS feed includes both (ACCEPTED and DEFERRED)
 		const { GET } = await import("../../../src/pages/api/branches/[slug]/opds");
-		const opdsResponse = await GET({
-			params: { slug: branch.slug },
-			request: new Request(`http://localhost/api/branches/${branch.slug}/opds`),
-		} as APIContext);
+		const opdsResponse = await GET(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: new Request(
+					`http://localhost/api/branches/${branch.slug}/opds`,
+				),
+			}),
+		);
 
 		const opds = (await opdsResponse.json()) as {
 			publications: Array<{ metadata: { title: string } }>;

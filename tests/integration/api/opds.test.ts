@@ -1,13 +1,18 @@
-import type { APIContext } from "astro";
+import type { Params } from "astro";
 import { beforeEach, describe, expect, it } from "vitest";
 import { projectBranchState } from "../../../src/domain/projection";
 import { getBranchEvents } from "../../../src/lib/dal";
-import type { OPDSCatalog, OPDSPublication } from "../../../src/lib/opds";
+import type {
+	OPDSCatalog,
+	OPDSLink,
+	OPDSPublication,
+} from "../../../src/lib/opds";
 import {
 	createMockRecommendation,
 	createRecommendationsGeneratedEvent,
 	createStatusChangedEvent,
 	createTestBranch,
+	createTestContext,
 	resetStorage,
 } from "../helpers";
 
@@ -16,29 +21,33 @@ describe("OPDS API Integration", () => {
 		resetStorage();
 	});
 
+	const GET = async (params: Params, request: Request) => {
+		return await import("../../../src/pages/api/branches/[slug]/opds").then(
+			(module) =>
+				module.GET(
+					createTestContext({
+						params,
+						request,
+					}),
+				),
+		);
+	};
+
 	it("should return 400 if slug is missing", async () => {
-		const { GET } = await import("../../../src/pages/api/branches/[slug]/opds");
 		const request = new Request("http://localhost/api/branches/test/opds");
 
-		const response = await GET({
-			params: {},
-			request,
-		} as APIContext);
+		const response = await GET({}, request);
 
 		expect(response.status).toBe(400);
 		expect(await response.text()).toBe("Slug required");
 	});
 
 	it("should return 404 if branch does not exist", async () => {
-		const { GET } = await import("../../../src/pages/api/branches/[slug]/opds");
 		const request = new Request(
 			"http://localhost/api/branches/nonexistent/opds",
 		);
 
-		const response = await GET({
-			params: { slug: "nonexistent" },
-			request,
-		} as APIContext);
+		const response = await GET({ slug: "nonexistent" }, request);
 
 		expect(response.status).toBe(404);
 		expect(await response.text()).toBe("Branch not found");
@@ -72,21 +81,17 @@ describe("OPDS API Integration", () => {
 			[generatedEvent, acceptedEvent1, acceptedEvent2],
 		);
 
-		const { GET } = await import("../../../src/pages/api/branches/[slug]/opds");
 		const request = new Request(
 			`http://localhost/api/branches/${branch.slug}/opds`,
 		);
 
-		const response = await GET({
-			params: { slug: branch.slug },
-			request,
-		} as APIContext);
+		const response = await GET({ slug: branch.slug }, request);
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("Content-Type")).toBe("application/opds+json");
 		expect(response.headers.get("Cache-Control")).toBe("public, max-age=3600");
 
-		const catalog = await response.json();
+		const catalog = (await response.json()) as OPDSCatalog;
 
 		// Verify catalog structure
 		expect(catalog).toHaveProperty("metadata");
@@ -99,9 +104,11 @@ describe("OPDS API Integration", () => {
 		expect(catalog.metadata["@type"]).toBe("http://schema.org/DataCatalog");
 
 		// Verify self link
-		const selfLink = catalog.links.find((link) => link.rel === "self");
+		const selfLink = catalog.links.find(
+			(link: OPDSLink) => link.rel === "self",
+		);
 		expect(selfLink).toBeDefined();
-		expect(selfLink.type).toBe("application/opds+json");
+		expect(selfLink?.type).toBe("application/opds+json");
 
 		// Verify publications
 		expect(catalog.publications).toHaveLength(2);
@@ -130,17 +137,13 @@ describe("OPDS API Integration", () => {
 			rejectedEvent,
 		]);
 
-		const { GET } = await import("../../../src/pages/api/branches/[slug]/opds");
 		const request = new Request(
 			`http://localhost/api/branches/${branch.slug}/opds`,
 		);
 
-		const response = await GET({
-			params: { slug: branch.slug },
-			request,
-		} as APIContext);
+		const response = await GET({ slug: branch.slug }, request);
 
-		const catalog = await response.json();
+		const catalog = (await response.json()) as OPDSCatalog;
 
 		// Should only include ACCEPTED and DEFERRED
 		expect(catalog.publications).toHaveLength(2);
@@ -183,17 +186,13 @@ describe("OPDS API Integration", () => {
 			[generatedEvent, acceptedEvent],
 		);
 
-		const { GET } = await import("../../../src/pages/api/branches/[slug]/opds");
 		const request = new Request(
 			`http://localhost/api/branches/${branch.slug}/opds`,
 		);
 
-		const response = await GET({
-			params: { slug: branch.slug },
-			request,
-		} as APIContext);
+		const response = await GET({ slug: branch.slug }, request);
 
-		const catalog = await response.json();
+		const catalog = (await response.json()) as OPDSCatalog;
 		const publication = catalog.publications[0];
 
 		// Verify publication structure
@@ -209,19 +208,19 @@ describe("OPDS API Integration", () => {
 		// Verify images
 		expect(publication.images).toBeDefined();
 		expect(publication.images).toHaveLength(1);
-		expect(publication.images[0].href).toBe("https://example.com/cover.jpg");
-		expect(publication.images[0].type).toBe("image/jpeg");
+		expect(publication.images?.[0].href).toBe("https://example.com/cover.jpg");
+		expect(publication.images?.[0].type).toBe("image/jpeg");
 
 		// Verify links
 		expect(publication.links).toBeDefined();
 		expect(publication.links.length).toBeGreaterThan(0);
 
 		// Should have OpenLibrary link
-		const openLibraryLink = publication.links.find((link) =>
+		const openLibraryLink = publication.links.find((link: OPDSLink) =>
 			link.href.includes("openlibrary.org"),
 		);
 		expect(openLibraryLink).toBeDefined();
-		expect(openLibraryLink.href).toBe("https://openlibrary.org/works/OL123W");
+		expect(openLibraryLink?.href).toBe("https://openlibrary.org/works/OL123W");
 	});
 
 	it("should handle books without metadata gracefully", async () => {
@@ -244,12 +243,14 @@ describe("OPDS API Integration", () => {
 			`http://localhost/api/branches/${branch.slug}/opds`,
 		);
 
-		const response = await GET({
-			params: { slug: branch.slug },
-			request,
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: branch.slug },
+				request,
+			}),
+		);
 
-		const catalog = await response.json();
+		const catalog = (await response.json()) as OPDSCatalog;
 		const publication = catalog.publications[0];
 
 		expect(publication.metadata.title).toBe("Simple Book");
@@ -280,12 +281,14 @@ describe("OPDS API Integration", () => {
 			`http://localhost/api/branches/${branch.slug}/opds`,
 		);
 
-		const response = await GET({
-			params: { slug: branch.slug },
-			request,
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: branch.slug },
+				request,
+			}),
+		);
 
-		const catalog = await response.json();
+		const catalog = (await response.json()) as OPDSCatalog;
 
 		expect(catalog.publications).toHaveLength(0);
 		expect(catalog.metadata.title).toBe("Test Branch Empty");
@@ -352,13 +355,15 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			const response = await POST({
-				params: {},
-				request,
-			} as APIContext);
+			const response = await POST(
+				createTestContext({
+					params: {},
+					request,
+				}),
+			);
 
 			expect(response.status).toBe(400);
-			const data = await response.json();
+			const data = (await response.json()) as { error: string };
 			expect(data.error).toBe("Slug required");
 		});
 
@@ -386,13 +391,15 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			const response = await POST({
-				params: { slug: "nonexistent" },
-				request,
-			} as APIContext);
+			const response = await POST(
+				createTestContext({
+					params: { slug: "nonexistent" },
+					request,
+				}),
+			);
 
 			expect(response.status).toBe(404);
-			const data = await response.json();
+			const data = (await response.json()) as { error: string };
 			expect(data.error).toBe("Branch not found");
 		});
 
@@ -413,13 +420,15 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			const response = await POST({
-				params: { slug: branch.slug },
-				request,
-			} as APIContext);
+			const response = await POST(
+				createTestContext({
+					params: { slug: branch.slug },
+					request,
+				}),
+			);
 
 			expect(response.status).toBe(400);
-			const data = await response.json();
+			const data = (await response.json()) as { error: string };
 			expect(data.error).toBe("OPDS file is required");
 		});
 
@@ -445,13 +454,15 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			const response = await POST({
-				params: { slug: branch.slug },
-				request,
-			} as APIContext);
+			const response = await POST(
+				createTestContext({
+					params: { slug: branch.slug },
+					request,
+				}),
+			);
 
 			expect(response.status).toBe(400);
-			const data = await response.json();
+			const data = (await response.json()) as { error: string };
 			expect(data.error).toBe("Invalid JSON file");
 		});
 
@@ -461,14 +472,16 @@ describe("OPDS API Integration", () => {
 				"../../../src/pages/api/branches/[slug]/import-opds"
 			);
 
-			const invalidCatalog = {
-				metadata: { title: "Test" },
+			const invalidCatalog: OPDSCatalog = {
+				metadata: {
+					"@type": "http://schema.org/DataCatalog",
+					title: "Test",
+				},
 				links: [],
-				// Missing publications array
+				publications: [],
+				// Missing publications array validation happens in the API
 			};
-			const formData = createImportFormData(
-				invalidCatalog as Partial<OPDSCatalog>,
-			);
+			const formData = createImportFormData(invalidCatalog);
 
 			const request = new Request(
 				`http://localhost/api/branches/${branch.slug}/import-opds`,
@@ -478,13 +491,15 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			const response = await POST({
-				params: { slug: branch.slug },
-				request,
-			} as APIContext);
+			const response = await POST(
+				createTestContext({
+					params: { slug: branch.slug },
+					request,
+				}),
+			);
 
 			expect(response.status).toBe(400);
-			const data = await response.json();
+			const data = (await response.json()) as { error: string };
 			expect(data.error).toBe(
 				"Invalid OPDS catalog structure. Missing publications array.",
 			);
@@ -507,13 +522,15 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			const response = await POST({
-				params: { slug: branch.slug },
-				request,
-			} as APIContext);
+			const response = await POST(
+				createTestContext({
+					params: { slug: branch.slug },
+					request,
+				}),
+			);
 
 			expect(response.status).toBe(400);
-			const data = await response.json();
+			const data = (await response.json()) as { error: string };
 			expect(data.error).toBe("No valid books found in OPDS catalog");
 		});
 
@@ -543,13 +560,15 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			const response = await POST({
-				params: { slug: branch.slug },
-				request,
-			} as APIContext);
+			const response = await POST(
+				createTestContext({
+					params: { slug: branch.slug },
+					request,
+				}),
+			);
 
 			expect(response.status).toBe(400);
-			const data = await response.json();
+			const data = (await response.json()) as { error: string };
 			expect(data.error).toContain("Invalid status");
 		});
 
@@ -599,13 +618,19 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			const response = await POST({
-				params: { slug: branch.slug },
-				request,
-			} as APIContext);
+			const response = await POST(
+				createTestContext({
+					params: { slug: branch.slug },
+					request,
+				}),
+			);
 
 			expect(response.status).toBe(200);
-			const data = await response.json();
+			const data = (await response.json()) as {
+				success: boolean;
+				imported: number;
+				status: string;
+			};
 			expect(data.success).toBe(true);
 			expect(data.imported).toBe(2);
 			expect(data.status).toBe("PENDING");
@@ -665,13 +690,19 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			const response = await POST({
-				params: { slug: branch.slug },
-				request,
-			} as APIContext);
+			const response = await POST(
+				createTestContext({
+					params: { slug: branch.slug },
+					request,
+				}),
+			);
 
 			expect(response.status).toBe(200);
-			const data = await response.json();
+			const data = (await response.json()) as {
+				success: boolean;
+				imported: number;
+				status: string;
+			};
 			expect(data.success).toBe(true);
 			expect(data.imported).toBe(1);
 			expect(data.status).toBe("ACCEPTED");
@@ -725,13 +756,18 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			const response = await POST({
-				params: { slug: branch.slug },
-				request,
-			} as APIContext);
+			const response = await POST(
+				createTestContext({
+					params: { slug: branch.slug },
+					request,
+				}),
+			);
 
 			expect(response.status).toBe(200);
-			const data = await response.json();
+			const data = (await response.json()) as {
+				success: boolean;
+				imported: number;
+			};
 			expect(data.success).toBe(true);
 			expect(data.imported).toBe(1);
 
@@ -776,10 +812,12 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			await POST({
-				params: { slug: branch.slug },
-				request: request1,
-			} as APIContext);
+			await POST(
+				createTestContext({
+					params: { slug: branch.slug },
+					request: request1,
+				}),
+			);
 
 			// Import with DEFERRED status
 			const catalog2 = createOPDSCatalog([
@@ -802,10 +840,12 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			await POST({
-				params: { slug: branch.slug },
-				request: request2,
-			} as APIContext);
+			await POST(
+				createTestContext({
+					params: { slug: branch.slug },
+					request: request2,
+				}),
+			);
 
 			// Verify both imports worked
 			const events = await getBranchEvents(branch.slug);
@@ -847,11 +887,11 @@ describe("OPDS API Integration", () => {
 				{
 					metadata: {
 						"@type": "http://schema.org/Book",
-						// Missing title - should be skipped
+						title: "", // Empty title - should be skipped
 						author: [{ name: "Author" }],
-					} as Partial<OPDSPublication>, // Type assertion to allow testing invalid data (missing required title)
+					},
 					links: [],
-				},
+				} as OPDSPublication, // Type assertion to allow testing invalid data (empty title)
 			]);
 			const formData = createImportFormData(catalog, "ACCEPTED");
 
@@ -863,13 +903,15 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			const response = await POST({
-				params: { slug: branch.slug },
-				request,
-			} as APIContext);
+			const response = await POST(
+				createTestContext({
+					params: { slug: branch.slug },
+					request,
+				}),
+			);
 
 			expect(response.status).toBe(200);
-			const data = await response.json();
+			const data = (await response.json()) as { imported: number };
 			// Should only import the book with a title
 			expect(data.imported).toBe(1);
 
@@ -918,10 +960,12 @@ describe("OPDS API Integration", () => {
 				},
 			);
 
-			await POST({
-				params: { slug: branch.slug },
-				request,
-			} as APIContext);
+			await POST(
+				createTestContext({
+					params: { slug: branch.slug },
+					request,
+				}),
+			);
 
 			const events = await getBranchEvents(branch.slug);
 			const generatedEvents = events.filter(

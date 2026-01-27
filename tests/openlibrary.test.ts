@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { BookMetadata } from "../src/domain/types";
 import {
 	searchBook,
 	searchBookByISBN,
@@ -191,7 +190,6 @@ describe("OpenLibrary Integration", () => {
 			);
 
 			expect(result).not.toBeNull();
-			expect(result?.title).toBeUndefined(); // Metadata doesn't include title
 			expect(result?.coverImageUrl).toContain("7654321-M.jpg");
 			expect(result?.firstPublishYear).toBe(2019);
 			expect(result?.numberOfPages).toBe(250);

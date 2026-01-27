@@ -92,7 +92,7 @@ describe("AI Integration", () => {
 			// Set API key so we test the actual OpenAI path
 			process.env.OPENAI_API_KEY = "test-key";
 			// Reset modules to ensure the API key is picked up
-			await vi.resetModules();
+			vi.resetModules();
 		});
 
 		it('should include "None yet." when no reflections exist', async () => {

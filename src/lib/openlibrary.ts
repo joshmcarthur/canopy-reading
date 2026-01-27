@@ -22,6 +22,15 @@ interface OpenLibrarySearchDoc {
 }
 
 /**
+ * OpenLibrary search API response structure
+ */
+interface OpenLibrarySearchResponse {
+	docs: OpenLibrarySearchDoc[];
+	numFound?: number;
+	start?: number;
+}
+
+/**
  * Search for a book by ISBN (most reliable method)
  */
 export async function searchBookByISBN(
@@ -38,7 +47,7 @@ export async function searchBookByISBN(
 			return null;
 		}
 
-		const data = await response.json();
+		const data = (await response.json()) as OpenLibrarySearchResponse;
 		if (!data.docs || data.docs.length === 0) {
 			return null;
 		}
@@ -66,7 +75,7 @@ export async function searchBookByTitleAndAuthor(
 			return null;
 		}
 
-		const data = await response.json();
+		const data = (await response.json()) as OpenLibrarySearchResponse;
 		if (!data.docs || data.docs.length === 0) {
 			return null;
 		}

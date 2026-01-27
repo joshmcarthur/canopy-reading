@@ -1,11 +1,11 @@
-import type { APIContext } from "astro";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { BookItem } from "../../../src/domain/types";
+import type { BookItem, BranchState } from "../../../src/domain/types";
 import {
 	createMockRecommendation,
 	createRecommendationsGeneratedEvent,
 	createStatusChangedEvent,
 	createTestBranch,
+	createTestContext,
 	resetStorage,
 } from "../helpers";
 
@@ -19,9 +19,12 @@ describe("State API Integration", () => {
 			"../../../src/pages/api/branches/[slug]/state"
 		);
 
-		const response = await GET({
-			params: {},
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: {},
+				request: new Request("http://localhost"),
+			}),
+		);
 
 		expect(response.status).toBe(400);
 		expect(await response.text()).toBe("Slug required");
@@ -46,14 +49,19 @@ describe("State API Integration", () => {
 			"../../../src/pages/api/branches/[slug]/state"
 		);
 
-		const response = await GET({
-			params: { slug: branch.slug },
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: new Request("http://localhost"),
+			}),
+		);
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("Content-Type")).toBe("application/json");
 
-		const state = await response.json();
+		const state = (await response.json()) as BranchState & {
+			historyCount: number;
+		};
 
 		expect(state).toHaveProperty("inbox");
 		expect(state).toHaveProperty("library");
@@ -82,11 +90,16 @@ describe("State API Integration", () => {
 			"../../../src/pages/api/branches/[slug]/state"
 		);
 
-		const response = await GET({
-			params: { slug: branch.slug },
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: new Request("http://localhost"),
+			}),
+		);
 
-		const state = await response.json();
+		const state = (await response.json()) as BranchState & {
+			historyCount: number;
+		};
 
 		expect(state.inbox).toHaveLength(0);
 		expect(state.library).toHaveLength(0);
@@ -115,11 +128,16 @@ describe("State API Integration", () => {
 			"../../../src/pages/api/branches/[slug]/state"
 		);
 
-		const response = await GET({
-			params: { slug: branch.slug },
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: new Request("http://localhost"),
+			}),
+		);
 
-		const state = await response.json();
+		const state = (await response.json()) as BranchState & {
+			historyCount: number;
+		};
 
 		// Book A should be in library with ALREADY_READ status
 		const bookA = state.library.find((b: BookItem) => b.title === "Book A");
@@ -155,11 +173,16 @@ describe("State API Integration", () => {
 			"../../../src/pages/api/branches/[slug]/state"
 		);
 
-		const response = await GET({
-			params: { slug: branch.slug },
-		} as APIContext);
+		const response = await GET(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: new Request("http://localhost"),
+			}),
+		);
 
-		const state = await response.json();
+		const state = (await response.json()) as BranchState & {
+			historyCount: number;
+		};
 
 		// Accepted book should be in library
 		expect(state.library).toHaveLength(1);

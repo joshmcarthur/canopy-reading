@@ -86,7 +86,7 @@ const read = state.library.filter((i) => i.status === "ALREADY_READ");
                 !!item.metadata?.coverImageUrl
               )
               .slice(0, 8)
-              .map((item, index) => (
+              .map((item) => (
                 <div class="book-cover-item flex-shrink-0 relative group">
                   <img
                     src={item.metadata.coverImageUrl}
@@ -284,7 +284,7 @@ const read = state.library.filter((i) => i.status === "ALREADY_READ");
   </main>
 </Layout>
 
-<script define:vars={{ slug }}>
+<script is:inline define:vars={{ slug }}>
   // Client-side logic for async recommendations
   const generateForm = document.getElementById('generate-form');
   const generateBtn = document.getElementById('generate-btn');

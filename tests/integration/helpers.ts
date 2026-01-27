@@ -1,11 +1,13 @@
+import type { Params } from "astro";
+import type { APIContext } from "astro";
+import { createContext } from "astro/middleware";
 import { v4 as uuidv4 } from "uuid";
 import type {
 	AppEvent,
-	BookItem,
 	Branch,
 	RecommendationItem,
 } from "../../src/domain/types";
-import { addEvent, createBranch, getBranchEvents } from "../../src/lib/dal";
+import { addEvent, createBranch } from "../../src/lib/dal";
 import { resetAdapter } from "../../src/lib/dal/factory";
 import { getAdapter } from "../../src/lib/dal/factory";
 
@@ -136,4 +138,21 @@ export function htmlContains(html: string, text: string): boolean {
 			.replace(/\s+/g, " ")
 			.includes(text)
 	);
+}
+
+/**
+ * Create an APIContext for testing API routes.
+ * Provides sensible defaults for required fields.
+ */
+export function createTestContext(options: {
+	params?: Params;
+	request?: Request;
+	locals?: App.Locals;
+}): APIContext {
+	return createContext({
+		params: options.params ?? {},
+		request: options.request ?? new Request("http://localhost"),
+		defaultLocale: "en-US",
+		locals: options.locals ?? {},
+	});
 }

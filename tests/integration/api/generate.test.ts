@@ -1,8 +1,7 @@
-import type { APIContext } from "astro";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { projectBranchState } from "../../../src/domain/projection";
 import { getBranchEvents } from "../../../src/lib/dal";
-import { createTestBranch, resetStorage } from "../helpers";
+import { createTestBranch, createTestContext, resetStorage } from "../helpers";
 
 // Mock the AI generation function
 vi.mock("../../../src/lib/ai", async () => {
@@ -38,10 +37,12 @@ describe("Generate API Integration", () => {
 			method: "POST",
 		});
 
-		const response = await POST({
-			params: {},
-			request,
-		} as APIContext);
+		const response = await POST(
+			createTestContext({
+				params: {},
+				request,
+			}),
+		);
 
 		expect(response.status).toBe(400);
 	});
@@ -57,10 +58,12 @@ describe("Generate API Integration", () => {
 			},
 		);
 
-		const response = await POST({
-			params: { slug: "nonexistent" },
-			request,
-		} as APIContext);
+		const response = await POST(
+			createTestContext({
+				params: { slug: "nonexistent" },
+				request,
+			}),
+		);
 
 		expect(response.status).toBe(404);
 	});
@@ -84,12 +87,12 @@ describe("Generate API Integration", () => {
 			},
 		);
 
-		const response = await POST({
-			params: { slug: branch.slug },
-			request,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		const response = await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request,
+			}),
+		);
 
 		// Should redirect to branch page
 		expect(response.status).toBe(302);
@@ -135,14 +138,16 @@ describe("Generate API Integration", () => {
 			},
 		);
 
-		const response = await POST({
-			params: { slug: branch.slug },
-			request,
-		} as APIContext);
+		const response = await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request,
+			}),
+		);
 
 		// Should return 202 Accepted immediately
 		expect(response.status).toBe(202);
-		const json = await response.json();
+		const json = (await response.json()) as { status: string };
 		expect(json.status).toBe("processing");
 
 		// Wait a bit for background generation (in real scenario this would be async)
@@ -150,7 +155,6 @@ describe("Generate API Integration", () => {
 
 		// Verify recommendations were generated
 		const events = await getBranchEvents(branch.slug);
-		const state = projectBranchState(events);
 		// Note: In the actual implementation, JSON requests return immediately
 		// and generation happens in background, so we may need to wait
 		expect(events.some((e) => e.type === "RECOMMENDATIONS_REQUESTED")).toBe(
@@ -171,12 +175,12 @@ describe("Generate API Integration", () => {
 			},
 		);
 
-		await POST({
-			params: { slug: branch.slug },
-			request,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request,
+			}),
+		);
 
 		const events = await getBranchEvents(branch.slug);
 		const requestedEvents = events.filter(
@@ -199,12 +203,12 @@ describe("Generate API Integration", () => {
 				method: "POST",
 			},
 		);
-		await POST({
-			params: { slug: branch.slug },
-			request: request1,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: request1,
+			}),
+		);
 
 		// Second generation
 		const request2 = new Request(
@@ -213,12 +217,12 @@ describe("Generate API Integration", () => {
 				method: "POST",
 			},
 		);
-		await POST({
-			params: { slug: branch.slug },
-			request: request2,
-			redirect: (url: string) =>
-				new Response(null, { status: 302, headers: { Location: url } }),
-		} as APIContext);
+		await POST(
+			createTestContext({
+				params: { slug: branch.slug },
+				request: request2,
+			}),
+		);
 
 		const events = await getBranchEvents(branch.slug);
 		const state = projectBranchState(events);
