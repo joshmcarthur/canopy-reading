@@ -1,18 +1,16 @@
 import type { AppEvent, Branch } from "../domain/types";
 
 export interface Env {
-	BRANCH_DO: DurableObjectNamespace<BranchDO>;
+	BRANCH_DO: DurableObjectNamespace;
 }
 
 export class BranchDO {
 	private state: DurableObjectState;
-	private env: Env;
 	private branch: Branch | null = null;
 	private events: AppEvent[] = [];
 
-	constructor(state: DurableObjectState, env: Env) {
+	constructor(state: DurableObjectState, _env: Env) {
 		this.state = state;
-		this.env = env;
 	}
 
 	async fetch(request: Request): Promise<Response> {

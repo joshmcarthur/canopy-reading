@@ -1,17 +1,15 @@
 import type { Branch } from "../domain/types";
 
 export interface Env {
-	BRANCH_REGISTRY_DO: DurableObjectNamespace<BranchRegistryDO>;
+	BRANCH_REGISTRY_DO: DurableObjectNamespace;
 }
 
 export class BranchRegistryDO {
 	private state: DurableObjectState;
-	private env: Env;
 	private branches: Map<string, Branch> = new Map();
 
-	constructor(state: DurableObjectState, env: Env) {
+	constructor(state: DurableObjectState, _env: Env) {
 		this.state = state;
-		this.env = env;
 	}
 
 	async fetch(request: Request): Promise<Response> {
