@@ -26,5 +26,8 @@ jobs:
       - name: Check formatting and linting
         run: npm run check
 
+      - name: Check Astro formatting
+        run: npm run astro check
+
       - name: Run tests
         run: npm run test
