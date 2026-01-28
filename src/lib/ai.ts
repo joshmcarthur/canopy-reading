@@ -51,11 +51,23 @@ export async function generateRecommendations(
 					.join("\n")
 			: "None yet.";
 
+	// Collect all existing titles for the prompt context
+	const libraryTitles = state.library.map((b) => b.title);
+	const inboxTitles = state.inbox.map((b) => b.title);
+	const existingTitles = [...libraryTitles, ...inboxTitles];
+
+	// Collect all existing ISBNs for precise duplicate filtering
+	const existingIsbns = new Set<string>();
+	for (const item of [...state.library, ...state.inbox]) {
+		if (item.metadata?.isbn10) existingIsbns.add(item.metadata.isbn10);
+		if (item.metadata?.isbn13) existingIsbns.add(item.metadata.isbn13);
+	}
+
 	const systemPrompt = `You are a helpful reading assistant. 
   The user is looking for something to read, described as: "${branch.description}".
   
   Context:
-  - Accepted Books: ${state.library.map((b) => `${b.title} by ${b.author}`).join(", ")}
+  - Books already in list (Do NOT recommend these again): ${existingTitles.join(", ")}
   - Rejected Books: ${history
 		.filter(
 			(e): e is ItemStatusChangedEvent =>
@@ -90,7 +102,16 @@ export async function generateRecommendations(
 	}
 
 	const result = JSON.parse(content);
-	const items = result.items as RecommendationItem[];
+	let items = result.items as RecommendationItem[];
+
+	// Filter out duplicates based on ISBN ONLY
+	// If the recommended item has no ISBN, we cannot determine if it's a duplicate, so we keep it.
+	if (existingIsbns.size > 0) {
+		items = items.filter((item) => {
+			if (!item.isbn) return true; // Keep if no ISBN
+			return !existingIsbns.has(item.isbn);
+		});
+	}
 
 	// Enrich each recommendation with OpenLibrary metadata
 	const enrichedItems = await Promise.all(
