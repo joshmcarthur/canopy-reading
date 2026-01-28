@@ -51,11 +51,16 @@ export async function generateRecommendations(
 					.join("\n")
 			: "None yet.";
 
+	// Collect all existing titles (Library + Inbox)
+	const libraryTitles = state.library.map((b) => b.title);
+	const inboxTitles = state.inbox.map((b) => b.title);
+	const existingTitles = [...libraryTitles, ...inboxTitles];
+
 	const systemPrompt = `You are a helpful reading assistant. 
   The user is looking for something to read, described as: "${branch.description}".
   
   Context:
-  - Accepted Books: ${state.library.map((b) => `${b.title} by ${b.author}`).join(", ")}
+  - Books already in list (Do NOT recommend these again): ${existingTitles.join(", ")}
   - Rejected Books: ${history
 		.filter(
 			(e): e is ItemStatusChangedEvent =>
@@ -90,7 +95,16 @@ export async function generateRecommendations(
 	}
 
 	const result = JSON.parse(content);
-	const items = result.items as RecommendationItem[];
+	let items = result.items as RecommendationItem[];
+
+	// Filter out duplicates (already in library or inbox)
+	// We use case-insensitive comparison
+	const lowerCaseExistingTitles = new Set(
+		existingTitles.map((t) => t.toLowerCase()),
+	);
+	items = items.filter(
+		(item) => !lowerCaseExistingTitles.has(item.title.toLowerCase()),
+	);
 
 	// Enrich each recommendation with OpenLibrary metadata
 	const enrichedItems = await Promise.all(
