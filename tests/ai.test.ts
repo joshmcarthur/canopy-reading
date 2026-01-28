@@ -21,13 +21,13 @@ vi.mock("../src/lib/openlibrary", () => ({
 const mockChatCompletionsCreate = vi.fn();
 vi.mock("openai", () => {
 	return {
-		default: vi.fn().mockImplementation(() => ({
-			chat: {
+		default: class {
+			chat = {
 				completions: {
 					create: mockChatCompletionsCreate,
 				},
-			},
-		})),
+			};
+		},
 	};
 });
 
