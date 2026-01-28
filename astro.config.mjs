@@ -1,5 +1,5 @@
 import node from "@astrojs/node";
-import tailwind from "@astrojs/tailwind";
+import tailwindcss from "@tailwindcss/vite";
 // @ts-check
 import { defineConfig, passthroughImageService } from "astro/config";
 
@@ -15,5 +15,7 @@ export default defineConfig({
 	adapter: node({
 		mode: "standalone",
 	}),
-	integrations: [tailwind()],
+	vite: {
+		plugins: [tailwindcss()],
+	},
 });
