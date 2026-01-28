@@ -1,6 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { AppEvent, Branch } from "../../../domain/types";
+import matter from "gray-matter";
+import type {
+	AppEvent,
+	Branch,
+	ReflectionAddedEvent,
+} from "../../../domain/types";
 import type { StorageAdapter } from "../adapter";
 
 const DATA_DIR =
@@ -68,15 +73,31 @@ export class FilesystemAdapter implements StorageAdapter {
 
 		// Read existing events to determine next sequence number
 		const files = await fs.readdir(eventsDir);
-		const eventFiles = files.filter((f) => f.endsWith(".json"));
+		const eventFiles = files.filter((f) => f.endsWith(".md"));
 		const nextSeq = eventFiles.length === 0 ? 1 : eventFiles.length + 1;
 
 		// Format sequence number (e.g. 1 -> "001")
 		const seqStr = nextSeq.toString().padStart(3, "0");
-		const filename = `${seqStr}-${event.id}.json`;
+		const typeKebab = event.type.toLowerCase().replace(/_/g, "-");
+		const filename = `${seqStr}-${typeKebab}-${event.id}.md`;
 		const filePath = path.join(eventsDir, filename);
 
-		await fs.writeFile(filePath, JSON.stringify(event, null, 2), "utf-8");
+		let body = "";
+		let frontmatter: AppEvent = event;
+
+		if (event.type === "REFLECTION_ADDED") {
+			body = event.payload.content;
+			// Create a payload without content for frontmatter to avoid duplication
+			const { content, ...restPayload } = event.payload;
+			frontmatter = {
+				...event,
+				payload: restPayload,
+			} as Omit<ReflectionAddedEvent, "payload"> & {
+				payload: Omit<ReflectionAddedEvent["payload"], "content">;
+			} as AppEvent;
+		}
+
+		await fs.writeFile(filePath, matter.stringify(body, frontmatter), "utf-8");
 	}
 
 	async readEvents(slug: string): Promise<AppEvent[]> {
@@ -84,14 +105,23 @@ export class FilesystemAdapter implements StorageAdapter {
 
 		try {
 			const files = await fs.readdir(eventsDir);
-			const eventFiles = files.filter((f) => f.endsWith(".json")).sort(); // Lexical sort works for "001-...", "002-..."
+			// Lexical sort works for "001-...", "002-..."
+			const eventFiles = files.filter((f) => f.endsWith(".md")).sort();
 
 			const events: AppEvent[] = [];
 
 			for (const file of eventFiles) {
 				const filePath = path.join(eventsDir, file);
 				const content = await fs.readFile(filePath, "utf-8");
-				events.push(JSON.parse(content) as AppEvent);
+				const parsed = matter(content);
+				const event = parsed.data as AppEvent;
+
+				if (event.type === "REFLECTION_ADDED") {
+					// Restore content from body
+					(event as ReflectionAddedEvent).payload.content =
+						parsed.content.trim();
+				}
+				events.push(event);
 			}
 
 			return events;
