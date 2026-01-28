@@ -69,9 +69,7 @@ export class FilesystemAdapter implements StorageAdapter {
 
 		// Read existing events to determine next sequence number
 		const files = await fs.readdir(eventsDir);
-		const eventFiles = files.filter(
-			(f) => f.endsWith(".json") || f.endsWith(".md"),
-		);
+		const eventFiles = files.filter((f) => f.endsWith(".md"));
 		const nextSeq = eventFiles.length === 0 ? 1 : eventFiles.length + 1;
 
 		// Format sequence number (e.g. 1 -> "001")
@@ -102,29 +100,22 @@ export class FilesystemAdapter implements StorageAdapter {
 		try {
 			const files = await fs.readdir(eventsDir);
 			// Lexical sort works for "001-...", "002-..."
-			const eventFiles = files
-				.filter((f) => f.endsWith(".json") || f.endsWith(".md"))
-				.sort();
+			const eventFiles = files.filter((f) => f.endsWith(".md")).sort();
 
 			const events: AppEvent[] = [];
 
 			for (const file of eventFiles) {
 				const filePath = path.join(eventsDir, file);
 				const content = await fs.readFile(filePath, "utf-8");
+				const parsed = matter(content);
+				const event = parsed.data as AppEvent;
 
-				if (file.endsWith(".json")) {
-					events.push(JSON.parse(content) as AppEvent);
-				} else if (file.endsWith(".md")) {
-					const parsed = matter(content);
-					const event = parsed.data as AppEvent;
-
-					if (event.type === "REFLECTION_ADDED") {
-						// Restore content from body
-						(event as ReflectionAddedEvent).payload.content =
-							parsed.content.trim();
-					}
-					events.push(event);
+				if (event.type === "REFLECTION_ADDED") {
+					// Restore content from body
+					(event as ReflectionAddedEvent).payload.content =
+						parsed.content.trim();
 				}
+				events.push(event);
 			}
 
 			return events;
