@@ -1,7 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import matter from "gray-matter";
-import type { AppEvent, Branch, ReflectionAddedEvent } from "../../../domain/types";
+import type {
+	AppEvent,
+	Branch,
+	ReflectionAddedEvent,
+} from "../../../domain/types";
 import type { StorageAdapter } from "../adapter";
 
 const DATA_DIR =
@@ -79,7 +83,7 @@ export class FilesystemAdapter implements StorageAdapter {
 		const filePath = path.join(eventsDir, filename);
 
 		let body = "";
-		let frontmatter = { ...event };
+		let frontmatter: AppEvent = event;
 
 		if (event.type === "REFLECTION_ADDED") {
 			body = event.payload.content;
@@ -88,7 +92,9 @@ export class FilesystemAdapter implements StorageAdapter {
 			frontmatter = {
 				...event,
 				payload: restPayload,
-			} as any;
+			} as Omit<ReflectionAddedEvent, "payload"> & {
+				payload: Omit<ReflectionAddedEvent["payload"], "content">;
+			} as AppEvent;
 		}
 
 		await fs.writeFile(filePath, matter.stringify(body, frontmatter), "utf-8");
