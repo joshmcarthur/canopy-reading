@@ -1,178 +1,240 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto+Serif:ital,wght@0,100..900;1,100..900&family=Inter:wght@300;400;500;600;700&display=swap");
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme {
+	/* Colors */
+	--color-background: rgb(var(--background));
+	--color-foreground: rgb(var(--foreground));
+	--color-card: rgb(var(--card));
+	--color-card-foreground: rgb(var(--card-foreground));
+	--color-popover: rgb(var(--popover));
+	--color-popover-foreground: rgb(var(--popover-foreground));
+	--color-primary: rgb(var(--primary));
+	--color-primary-foreground: rgb(var(--primary-foreground));
+	--color-secondary: rgb(var(--secondary));
+	--color-secondary-foreground: rgb(var(--secondary-foreground));
+	--color-muted: rgb(var(--muted));
+	--color-muted-foreground: rgb(var(--muted-foreground));
+	--color-accent: rgb(var(--accent));
+	--color-accent-foreground: rgb(var(--accent-foreground));
+	--color-destructive: rgb(var(--destructive));
+	--color-destructive-foreground: rgb(var(--destructive-foreground));
+	--color-border: rgb(var(--border));
+	--color-input: rgb(var(--input));
+	--color-ring: rgb(var(--ring));
 
-@layer base {
-	:root {
-		/* Cozy Winter Night Color Palette */
-		/* Cream/Paper backgrounds */
-		--cream-50: 254 252 248;
-		--cream-100: 250 248 243;
-		--cream-200: 245 241 232;
-		--cream-300: 232 228 219;
+	/* Cozy palette colors */
+	--color-cream-50: rgb(var(--cream-50));
+	--color-cream-100: rgb(var(--cream-100));
+	--color-cream-200: rgb(var(--cream-200));
+	--color-cream-300: rgb(var(--cream-300));
+	--color-paper-50: rgb(var(--paper-50));
+	--color-paper-100: rgb(var(--paper-100));
+	--color-paper-200: rgb(var(--paper-200));
+	--color-charcoal-900: rgb(var(--charcoal-900));
+	--color-charcoal-800: rgb(var(--charcoal-800));
+	--color-charcoal-700: rgb(var(--charcoal-700));
+	--color-sage-400: rgb(var(--sage-400));
+	--color-sage-500: rgb(var(--sage-500));
+	--color-rose-200: rgb(var(--rose-200));
+	--color-rose-300: rgb(var(--rose-300));
+	--color-soft-gray: rgb(var(--soft-gray));
 
-		/* Paper variants */
-		--paper-50: 254 252 248;
-		--paper-100: 250 248 243;
-		--paper-200: 245 241 232;
+	/* Border radius */
+	--radius-lg: var(--radius);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-sm: calc(var(--radius) - 4px);
 
-		/* Charcoal text colors */
-		--charcoal-900: 44 42 38;
-		--charcoal-800: 58 54 48;
-		--charcoal-700: 74 70 64;
+	/* Font families */
+	--font-sans: Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif;
+	--font-serif: "Roboto Serif", Georgia, serif;
 
-		/* Muted grays */
-		--muted-gray: 107 103 89;
-		--soft-gray: 155 151 136;
+	/* Font sizes */
+	--font-size-xs: 0.75rem / 1.5;
+	--font-size-sm: 0.875rem / 1.6;
+	--font-size-base: 1rem / 1.75;
+	--font-size-lg: 1.125rem / 1.75;
+	--font-size-xl: 1.25rem / 1.7;
+	--font-size-2xl: 1.5rem / 1.6;
+	--font-size-3xl: 1.875rem / 1.5;
+	--font-size-4xl: 2.25rem / 1.4;
+}
 
-		/* Accent colors */
-		--sage-400: 156 175 136;
-		--sage-500: 139 159 122;
-		--rose-200: 232 213 204;
-		--rose-300: 201 169 155;
-		--warm-brown: 139 115 85;
-		--soft-blue: 168 198 225;
+:root {
+	/* Cozy Winter Night Color Palette */
+	/* Cream/Paper backgrounds */
+	--cream-50: 254 252 248;
+	--cream-100: 250 248 243;
+	--cream-200: 245 241 232;
+	--cream-300: 232 228 219;
 
-		/* ShadCN compatible variables */
-		--background: 254 252 248; /* cream-50 */
-		--foreground: 44 42 38; /* charcoal-900 */
-		--card: 250 248 243; /* cream-100 */
-		--card-foreground: 44 42 38; /* charcoal-900 */
-		--popover: 250 248 243; /* cream-100 */
-		--popover-foreground: 44 42 38; /* charcoal-900 */
-		--primary: 44 42 38; /* charcoal-900 */
-		--primary-foreground: 254 252 248; /* cream-50 */
-		--secondary: 245 241 232; /* paper-200 */
-		--secondary-foreground: 44 42 38; /* charcoal-900 */
-		--muted: 245 241 232; /* paper-200 */
-		--muted-foreground: 107 103 89; /* muted-gray */
-		--accent: 201 169 155; /* rose-300 */
-		--accent-foreground: 44 42 38; /* charcoal-900 */
-		--destructive: 220 38 38;
-		--destructive-foreground: 254 252 248; /* cream-50 */
-		--border: 232 228 219; /* cream-300 */
-		--input: 232 228 219; /* cream-300 */
-		--ring: 156 175 136; /* sage-400 */
-		--radius: 0.5rem;
+	/* Paper variants */
+	--paper-50: 254 252 248;
+	--paper-100: 250 248 243;
+	--paper-200: 245 241 232;
+
+	/* Charcoal text colors */
+	--charcoal-900: 44 42 38;
+	--charcoal-800: 58 54 48;
+	--charcoal-700: 74 70 64;
+
+	/* Muted grays */
+	--muted-gray: 107 103 89;
+	--soft-gray: 155 151 136;
+
+	/* Accent colors */
+	--sage-400: 156 175 136;
+	--sage-500: 139 159 122;
+	--rose-200: 232 213 204;
+	--rose-300: 201 169 155;
+	--warm-brown: 139 115 85;
+	--soft-blue: 168 198 225;
+
+	/* ShadCN compatible variables */
+	--background: 254 252 248; /* cream-50 */
+	--foreground: 44 42 38; /* charcoal-900 */
+	--card: 250 248 243; /* cream-100 */
+	--card-foreground: 44 42 38; /* charcoal-900 */
+	--popover: 250 248 243; /* cream-100 */
+	--popover-foreground: 44 42 38; /* charcoal-900 */
+	--primary: 44 42 38; /* charcoal-900 */
+	--primary-foreground: 254 252 248; /* cream-50 */
+	--secondary: 245 241 232; /* paper-200 */
+	--secondary-foreground: 44 42 38; /* charcoal-900 */
+	--muted: 245 241 232; /* paper-200 */
+	--muted-foreground: 107 103 89; /* muted-gray */
+	--accent: 201 169 155; /* rose-300 */
+	--accent-foreground: 44 42 38; /* charcoal-900 */
+	--destructive: 220 38 38;
+	--destructive-foreground: 254 252 248; /* cream-50 */
+	--border: 232 228 219; /* cream-300 */
+	--input: 232 228 219; /* cream-300 */
+	--ring: 156 175 136; /* sage-400 */
+	--radius: 0.5rem;
+}
+
+body {
+	background-color: rgb(var(--background));
+	color: rgb(var(--foreground));
+	font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+		sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: "Roboto Serif", Georgia, serif;
+}
+
+/* Book covers preview - scrollbar hiding */
+.book-covers-preview,
+.book-covers-preview-compact {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.book-covers-preview::-webkit-scrollbar,
+.book-covers-preview-compact::-webkit-scrollbar {
+	display: none;
+}
+
+/* Book cover item - rotation transforms */
+.book-cover-item {
+	transform: rotate(-2deg);
+	transition: transform 0.2s ease;
+}
+
+.book-cover-item:nth-child(even) {
+	transform: rotate(2deg);
+}
+
+.book-cover-item:nth-child(3n) {
+	transform: rotate(-1deg);
+}
+
+.book-cover-item:hover {
+	transform: rotate(0deg) scale(1.05);
+	z-index: 10;
+}
+
+/* Compact variant - slightly different rotation */
+.book-cover-item-compact {
+	transform: rotate(-1deg);
+	transition: transform 0.2s ease;
+}
+
+.book-cover-item-compact:nth-child(even) {
+	transform: rotate(1deg);
+}
+
+.book-cover-item-compact:hover {
+	transform: rotate(0deg) scale(1.05);
+	z-index: 10;
+}
+
+/* Fade gradient overlay */
+.book-covers-fade {
+	background: linear-gradient(
+		to left,
+		rgb(var(--background)) 0%,
+		rgba(var(--background), 0.95) 30%,
+		rgba(var(--background), 0.8) 60%,
+		transparent 100%
+	);
+}
+
+.book-covers-fade-compact {
+	background: linear-gradient(
+		to left,
+		rgb(var(--background)) 0%,
+		rgba(var(--background), 0.95) 40%,
+		rgba(var(--background), 0.7) 70%,
+		transparent 100%
+	);
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
 	}
-
-	body {
-		@apply bg-[rgb(var(--background))] text-[rgb(var(--foreground))] font-sans;
-		font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-			sans-serif;
-	}
-
-	h1,
-	h2,
-	h3,
-	h4,
-	h5,
-	h6 {
-		font-family: "Roboto Serif", Georgia, serif;
+	to {
+		opacity: 1;
+		transform: translateY(0);
 	}
 }
 
-@layer components {
-	/* Book covers preview - scrollbar hiding */
-	.book-covers-preview,
-	.book-covers-preview-compact {
-		scrollbar-width: none;
-		-ms-overflow-style: none;
-	}
-
-	.book-covers-preview::-webkit-scrollbar,
-	.book-covers-preview-compact::-webkit-scrollbar {
-		display: none;
-	}
-
-	/* Book cover item - rotation transforms */
-	.book-cover-item {
-		transform: rotate(-2deg);
-		transition: transform 0.2s ease;
-	}
-
-	.book-cover-item:nth-child(even) {
-		transform: rotate(2deg);
-	}
-
-	.book-cover-item:nth-child(3n) {
-		transform: rotate(-1deg);
-	}
-
-	.book-cover-item:hover {
-		transform: rotate(0deg) scale(1.05);
-		z-index: 10;
-	}
-
-	/* Compact variant - slightly different rotation */
-	.book-cover-item-compact {
-		transform: rotate(-1deg);
-		transition: transform 0.2s ease;
-	}
-
-	.book-cover-item-compact:nth-child(even) {
-		transform: rotate(1deg);
-	}
-
-	.book-cover-item-compact:hover {
-		transform: rotate(0deg) scale(1.05);
-		z-index: 10;
-	}
-
-	/* Fade gradient overlay */
-	.book-covers-fade {
-		background: linear-gradient(
-			to left,
-			rgb(var(--background)) 0%,
-			rgba(var(--background), 0.95) 30%,
-			rgba(var(--background), 0.8) 60%,
-			transparent 100%
-		);
-	}
-
-	.book-covers-fade-compact {
-		background: linear-gradient(
-			to left,
-			rgb(var(--background)) 0%,
-			rgba(var(--background), 0.95) 40%,
-			rgba(var(--background), 0.7) 70%,
-			transparent 100%
-		);
-	}
-
-	/* Fade in animation */
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-			transform: translateY(10px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	.animate-fade-in {
-		animation: fadeIn 0.5s ease-out forwards;
-	}
+.animate-fade-in {
+	animation: fadeIn 0.5s ease-out forwards;
 }
 
-@layer utilities {
-	/* Custom cozy shadows */
-	.shadow-cozy {
-		box-shadow: 0 1px 3px 0 rgba(44, 42, 38, 0.05), 0 1px 2px 0
-			rgba(44, 42, 38, 0.03);
-	}
+/* Custom cozy shadows */
+.shadow-cozy {
+	box-shadow: 0 1px 3px 0 rgba(44, 42, 38, 0.05), 0 1px 2px 0
+		rgba(44, 42, 38, 0.03);
+}
 
-	.shadow-cozy-md {
-		box-shadow: 0 4px 6px -1px rgba(44, 42, 38, 0.08), 0 2px 4px -1px
-			rgba(44, 42, 38, 0.04);
-	}
+.shadow-cozy-md {
+	box-shadow: 0 4px 6px -1px rgba(44, 42, 38, 0.08), 0 2px 4px -1px
+		rgba(44, 42, 38, 0.04);
+}
 
-	/* Full width container utilities */
+/* Full width container utilities */
+.container-wide {
+	max-width: 80rem; /* max-w-7xl = 80rem */
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: var(--spacing-6, 1.5rem); /* px-6 */
+	padding-right: var(--spacing-6, 1.5rem);
+}
+
+@media (min-width: 640px) {
 	.container-wide {
-		@apply max-w-7xl mx-auto px-6 sm:px-8;
+		padding-left: var(--spacing-8, 2rem); /* sm:px-8 */
+		padding-right: var(--spacing-8, 2rem);
 	}
 }
