@@ -269,7 +269,6 @@ describe("AI Integration", () => {
 		it("should include existing books in the system prompt", async () => {
 			const { generateRecommendations } = await import("../src/lib/ai");
 
-			// 1. Generate "Existing Book 1" -> adds to inbox
 			const eventGen1: AppEvent = {
 				id: "gen-1",
 				timestamp: "2023-01-01T00:00:00Z",
@@ -285,44 +284,10 @@ describe("AI Integration", () => {
 					model: "gpt-4o",
 				},
 			};
-			// 2. Accept "Existing Book 1" -> moves to library
-			const eventAccept1: ItemStatusChangedEvent = {
-				id: "accept-1",
-				timestamp: "2023-01-02T00:00:00Z",
-				type: "ITEM_STATUS_CHANGED",
-				payload: {
-					itemTitle: "Existing Book 1",
-					status: "ACCEPTED",
-				},
-			};
-			// 3. Generate "Pending Book 2" -> adds to inbox
-			const eventGen2: AppEvent = {
-				id: "gen-2",
-				timestamp: "2023-01-03T00:00:00Z",
-				type: "RECOMMENDATIONS_GENERATED",
-				payload: {
-					items: [
-						{
-							title: "Pending Book 2",
-							author: "Author 2",
-							reason: "Reason 2",
-						},
-					],
-					model: "gpt-4o",
-				},
-			};
+			const history: AppEvent[] = [eventGen1];
 
-			const history: AppEvent[] = [eventGen1, eventAccept1, eventGen2];
-
-			// Mock OpenAI response
 			mockChatCompletionsCreate.mockResolvedValue({
-				choices: [
-					{
-						message: {
-							content: JSON.stringify({ items: [] }),
-						},
-					},
-				],
+				choices: [{ message: { content: JSON.stringify({ items: [] }) } }],
 			});
 
 			await generateRecommendations(branch, history);
@@ -337,13 +302,12 @@ describe("AI Integration", () => {
 				"Books already in list (Do NOT recommend these again):",
 			);
 			expect(systemPrompt).toContain("Existing Book 1");
-			expect(systemPrompt).toContain("Pending Book 2");
 		});
 
-		it("should filter out duplicates from OpenAI response", async () => {
+		it("should filter out duplicates from OpenAI response based on ISBN", async () => {
 			const { generateRecommendations } = await import("../src/lib/ai");
 
-			// 1. Generate "Existing Book 1" -> adds to inbox
+			// 1. Generate a book that will have an ISBN
 			const eventGen1: AppEvent = {
 				id: "gen-1",
 				timestamp: "2023-01-01T00:00:00Z",
@@ -354,39 +318,19 @@ describe("AI Integration", () => {
 							title: "Existing Book 1",
 							author: "Author 1",
 							reason: "Reason 1",
-						},
-					],
-					model: "gpt-4o",
-				},
-			};
-			// 2. Accept "Existing Book 1" -> moves to library
-			const eventAccept1: ItemStatusChangedEvent = {
-				id: "accept-1",
-				timestamp: "2023-01-02T00:00:00Z",
-				type: "ITEM_STATUS_CHANGED",
-				payload: {
-					itemTitle: "Existing Book 1",
-					status: "ACCEPTED",
-				},
-			};
-			// 3. Generate "Pending Book 2" -> adds to inbox
-			const eventGen2: AppEvent = {
-				id: "gen-2",
-				timestamp: "2023-01-03T00:00:00Z",
-				type: "RECOMMENDATIONS_GENERATED",
-				payload: {
-					items: [
-						{
-							title: "Pending Book 2",
-							author: "Author 2",
-							reason: "Reason 2",
+							// NOTE: The metadata is normally enriched in projection or before saving,
+							// but here we simulate what's in the history.
+							// However, projectBranchState sets metadata from the item.metadata.
+							metadata: {
+								isbn13: "978-1234567890",
+							},
 						},
 					],
 					model: "gpt-4o",
 				},
 			};
 
-			const history: AppEvent[] = [eventGen1, eventAccept1, eventGen2];
+			const history: AppEvent[] = [eventGen1];
 
 			// Mock OpenAI response returning duplicates
 			mockChatCompletionsCreate.mockResolvedValue({
@@ -396,20 +340,17 @@ describe("AI Integration", () => {
 							content: JSON.stringify({
 								items: [
 									{
-										title: "Existing Book 1",
+										title: "Different Title Same ISBN",
 										author: "Author 1",
 										reason: "Reason 1",
-									}, // Duplicate from Library
+										isbn: "978-1234567890", // Duplicate ISBN
+									},
 									{
-										title: "pending book 2",
+										title: "New Book",
 										author: "Author 2",
 										reason: "Reason 2",
-									}, // Duplicate from Inbox (case insensitive check)
-									{
-										title: "New Book 3",
-										author: "Author 3",
-										reason: "Reason 3",
-									}, // New book
+										isbn: "978-0987654321",
+									},
 								],
 							}),
 						},
@@ -420,7 +361,108 @@ describe("AI Integration", () => {
 			const recommendations = await generateRecommendations(branch, history);
 
 			expect(recommendations).toHaveLength(1);
-			expect(recommendations[0].title).toBe("New Book 3");
+			expect(recommendations[0].title).toBe("New Book");
+		});
+
+		it("should NOT filter out duplicates if ISBN is missing", async () => {
+			const { generateRecommendations } = await import("../src/lib/ai");
+
+			// 1. Existing book with NO ISBN
+			const eventGen1: AppEvent = {
+				id: "gen-1",
+				timestamp: "2023-01-01T00:00:00Z",
+				type: "RECOMMENDATIONS_GENERATED",
+				payload: {
+					items: [
+						{
+							title: "Existing Book No ISBN",
+							author: "Author 1",
+							reason: "Reason 1",
+							metadata: {}, // No ISBN
+						},
+					],
+					model: "gpt-4o",
+				},
+			};
+
+			const history: AppEvent[] = [eventGen1];
+
+			// Mock OpenAI response returning same book
+			mockChatCompletionsCreate.mockResolvedValue({
+				choices: [
+					{
+						message: {
+							content: JSON.stringify({
+								items: [
+									{
+										title: "Existing Book No ISBN", // Same title
+										author: "Author 1",
+										reason: "Reason 1",
+										// No ISBN provided by AI
+									},
+								],
+							}),
+						},
+					},
+				],
+			});
+
+			const recommendations = await generateRecommendations(branch, history);
+
+			// Should NOT filter because no ISBN to match
+			expect(recommendations).toHaveLength(1);
+			expect(recommendations[0].title).toBe("Existing Book No ISBN");
+		});
+
+		it("should NOT filter out duplicates if titles match but ISBNs differ", async () => {
+			const { generateRecommendations } = await import("../src/lib/ai");
+
+			// 1. Existing book
+			const eventGen1: AppEvent = {
+				id: "gen-1",
+				timestamp: "2023-01-01T00:00:00Z",
+				type: "RECOMMENDATIONS_GENERATED",
+				payload: {
+					items: [
+						{
+							title: "The Hobbit",
+							author: "Tolkien",
+							reason: "Reason 1",
+							metadata: { isbn13: "1111111111111" },
+						},
+					],
+					model: "gpt-4o",
+				},
+			};
+
+			const history: AppEvent[] = [eventGen1];
+
+			// Mock OpenAI response returning same title but DIFFERENT ISBN
+			mockChatCompletionsCreate.mockResolvedValue({
+				choices: [
+					{
+						message: {
+							content: JSON.stringify({
+								items: [
+									{
+										title: "The Hobbit",
+										author: "Tolkien",
+										reason: "Different edition",
+										isbn: "2222222222222", // Different ISBN
+									},
+								],
+							}),
+						},
+					},
+				],
+			});
+
+			const recommendations = await generateRecommendations(branch, history);
+
+			// Should NOT filter because ISBNs are different
+			expect(recommendations).toHaveLength(1);
+			expect(recommendations[0].title).toBe("The Hobbit");
+			expect(recommendations[0].isbn).toBe("2222222222222");
 		});
 	});
 });
