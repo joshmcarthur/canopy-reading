@@ -66,7 +66,7 @@ export const POST: APIRoute = async ({ params, request }) => {
 
 		try {
 			catalog = JSON.parse(fileContent);
-		} catch (error) {
+		} catch (_error) {
 			return new Response(JSON.stringify({ error: "Invalid JSON file" }), {
 				status: 400,
 				headers: { "Content-Type": "application/json" },

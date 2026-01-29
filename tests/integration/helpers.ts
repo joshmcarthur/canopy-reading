@@ -1,5 +1,4 @@
-import type { Params } from "astro";
-import type { APIContext } from "astro";
+import type { APIContext, Params } from "astro";
 import { createContext } from "astro/middleware";
 import { v4 as uuidv4 } from "uuid";
 import type {
@@ -8,8 +7,7 @@ import type {
 	RecommendationItem,
 } from "../../src/domain/types";
 import { addEvent, createBranch } from "../../src/lib/dal";
-import { resetAdapter } from "../../src/lib/dal/factory";
-import { getAdapter } from "../../src/lib/dal/factory";
+import { getAdapter, resetAdapter } from "../../src/lib/dal/factory";
 
 /**
  * Create a test branch with optional initial events.

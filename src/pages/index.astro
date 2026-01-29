@@ -51,7 +51,7 @@ const branchesWithState = await Promise.all(
 				readCount: read.length,
 				covers,
 			};
-		} catch (error) {
+		} catch (_error) {
 			// If there's an error loading state, just return branch without covers
 			return {
 				...branch,
