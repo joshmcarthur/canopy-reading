@@ -6,6 +6,16 @@
 
 Canopy helps you organize your reading life around **branches**—themes, questions, or curiosities that guide what you read. Unlike traditional reading apps that provide generic recommendations based on your entire reading history, Canopy delivers **category-specific recommendations** that learn your precise preferences within each area of interest.
 
+<details>
+<summary>Screenshots</summary>
+
+![Landing page](.github/screenshots/canopy-reading-4.png)
+![First branch page](.github/screenshots/canopy-reading-1.png)
+![Second branch page](.github/screenshots/canopy-reading-3.png)
+![Reflection screenshot](.github/screenshots/canopy-reading-2.png)
+
+</details>
+
 ## Why Canopy?
 
 **For Readers Who:**
