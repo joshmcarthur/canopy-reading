@@ -11,7 +11,7 @@ FROM node:lts-alpine
 WORKDIR /app
 
 # Create minimal production package.json excluding build-time dependencies
-COPY package.json ./
+COPY package*.json ./
 RUN apk add --no-cache jq && \
     jq '{name, type, dependencies: (.dependencies | with_entries(select(.key | IN("typescript", "@astrojs/check", "tailwindcss", "@tailwindcss/vite") | not)))}' package.json > package.prod.json && \
     mv package.prod.json package.json && \
