@@ -15,7 +15,7 @@
 		"@astrojs/check": "^0.9.6",
 		"@astrojs/node": "^9.5.4",
 		"@tailwindcss/vite": "^4.1.18",
-		"astro": "^5.16.15",
+		"astro": "^5.18.0",
 		"gray-matter": "^4.0.3",
 		"openai": "^6.17.0",
 		"slugify": "^1.6.6",
