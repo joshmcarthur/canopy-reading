@@ -36,6 +36,7 @@ export default defineConfig({
 	...(allowedDomains.length > 0 && {
 		security: {
 			allowedDomains,
+			checkOrigin: false, // Disable CSRF origin check when behind reverse proxy
 		},
 	}),
 });
