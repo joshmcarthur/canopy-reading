@@ -8,7 +8,7 @@ import { defineConfig, passthroughImageService } from "astro/config";
 // and set CANOPY_STORAGE_ADAPTER=cloudflare environment variable.
 // The Cloudflare adapter requires Durable Object bindings (see wrangler.toml).
 
-// Parse allowedDomains from environment variable
+// Parse allowedDomains from environment variable (optional)
 // Format: JSON array, e.g. '[{"hostname":"**.example.com","protocol":"https"},{"hostname":"staging.myapp.com","protocol":"https","port":"443"}]'
 let allowedDomains = [];
 if (process.env.SECURITY_ALLOWED_DOMAINS) {
@@ -33,10 +33,11 @@ export default defineConfig({
 	vite: {
 		plugins: [tailwindcss()],
 	},
-	...(allowedDomains.length > 0 && {
-		security: {
-			allowedDomains,
-			checkOrigin: false, // Disable CSRF origin check when behind reverse proxy
-		},
-	}),
+	security: {
+		// Disable CSRF origin check - required when behind reverse proxy
+		// This allows same-origin POST requests to work correctly
+		checkOrigin: false,
+		// Optionally include allowedDomains if SECURITY_ALLOWED_DOMAINS is set
+		...(allowedDomains.length > 0 && { allowedDomains }),
+	},
 });
