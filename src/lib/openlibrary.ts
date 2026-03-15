@@ -1,6 +1,7 @@
 import type { BookMetadata } from "../domain/types";
 
-const OPENLIBRARY_SEARCH_URL = "https://openlibrary.org/search.json";
+const OPENLIBRARY_BASE_URL = "https://openlibrary.org";
+const OPENLIBRARY_SEARCH_URL = `${OPENLIBRARY_BASE_URL}/search.json`;
 const OPENLIBRARY_COVERS_BASE = "https://covers.openlibrary.org/b";
 
 /**
@@ -52,7 +53,7 @@ export async function searchBookByISBN(
 			return null;
 		}
 
-		return extractMetadata(data.docs[0]);
+		return await extractMetadata(data.docs[0]);
 	} catch (error) {
 		console.error("Error searching OpenLibrary by ISBN:", error);
 		return null;
@@ -80,7 +81,7 @@ export async function searchBookByTitleAndAuthor(
 			return null;
 		}
 
-		return extractMetadata(data.docs[0]);
+		return await extractMetadata(data.docs[0]);
 	} catch (error) {
 		console.error("Error searching OpenLibrary by title/author:", error);
 		return null;
@@ -111,7 +112,7 @@ export async function searchBook(
 /**
  * Extract metadata from OpenLibrary search result document
  */
-function extractMetadata(doc: OpenLibrarySearchDoc): BookMetadata {
+async function extractMetadata(doc: OpenLibrarySearchDoc): Promise<BookMetadata> {
 	const metadata: BookMetadata = {
 		enrichedAt: new Date().toISOString(),
 	};
@@ -204,9 +205,36 @@ function extractMetadata(doc: OpenLibrarySearchDoc): BookMetadata {
 		metadata.language = doc.language;
 	}
 
-	// Description - Note: OpenLibrary search API doesn't return descriptions
-	// Would need to fetch the work/edition details separately for this
-	// For now, we'll leave it empty and can enhance later if needed
+	// Description — requires a separate fetch to the Works API
+	if (metadata.openLibraryWorkKey) {
+		const description = await fetchWorkDescription(metadata.openLibraryWorkKey);
+		if (description) metadata.description = description;
+	}
 
 	return metadata;
+}
+
+/**
+ * Fetch the description for a work from the OpenLibrary Works API
+ */
+async function fetchWorkDescription(workKey: string): Promise<string | null> {
+	try {
+		const url = `${OPENLIBRARY_BASE_URL}${workKey}.json`;
+		const response = await fetch(url);
+		if (!response.ok) return null;
+
+		const data = (await response.json()) as {
+			description?: string | { value: string };
+		};
+		if (!data.description) return null;
+
+		// Description can be a plain string or an object with a `value` field
+		if (typeof data.description === "string") return data.description;
+		if (typeof data.description === "object" && data.description.value)
+			return data.description.value;
+
+		return null;
+	} catch {
+		return null;
+	}
 }

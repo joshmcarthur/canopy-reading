@@ -292,8 +292,8 @@ describe("OpenLibrary Integration", () => {
 
 			expect(result).not.toBeNull();
 			expect(result?.coverImageUrl).toContain("1111111-M.jpg");
-			// Should only call fetch once (for ISBN search)
-			expect(global.fetch).toHaveBeenCalledTimes(1);
+			// Should call fetch twice: once for ISBN search, once for work description
+			expect(global.fetch).toHaveBeenCalledTimes(2);
 			expect(global.fetch).toHaveBeenCalledWith(
 				expect.stringContaining("isbn:9781111111111"),
 			);
@@ -331,7 +331,8 @@ describe("OpenLibrary Integration", () => {
 
 			expect(result).not.toBeNull();
 			expect(result?.coverImageUrl).toContain("2222222-M.jpg");
-			expect(global.fetch).toHaveBeenCalledTimes(2);
+			// Should call fetch 3 times: ISBN search, title+author search, work description
+			expect(global.fetch).toHaveBeenCalledTimes(3);
 		});
 
 		it("should use title+author when ISBN is not provided", async () => {
@@ -355,7 +356,8 @@ describe("OpenLibrary Integration", () => {
 
 			expect(result).not.toBeNull();
 			expect(result?.coverImageUrl).toContain("3333333-M.jpg");
-			expect(global.fetch).toHaveBeenCalledTimes(1);
+			// Should call fetch twice: once for title+author search, once for work description
+			expect(global.fetch).toHaveBeenCalledTimes(2);
 			expect(global.fetch).toHaveBeenCalledWith(
 				expect.stringContaining("title=No%20ISBN%20Book"),
 			);
@@ -500,6 +502,146 @@ describe("OpenLibrary Integration", () => {
 			expect(result?.coverImageUrl).toBeUndefined();
 			expect(result?.isbn10).toBeUndefined();
 			expect(result?.numberOfPages).toBeUndefined();
+		});
+	});
+
+	describe("work description fetching", () => {
+		it("should populate description when works API returns a plain string", async () => {
+			const searchResponse = {
+				docs: [
+					{
+						title: "Described Book",
+						author_name: ["Some Author"],
+						key: "/works/OL999W",
+					},
+				],
+			};
+			const worksResponse = { description: "A plain string description." };
+
+			global.fetch = vi
+				.fn()
+				.mockResolvedValueOnce({
+					ok: true,
+					json: async () => searchResponse,
+				} as Response)
+				.mockResolvedValueOnce({
+					ok: true,
+					json: async () => worksResponse,
+				} as Response);
+
+			const result = await searchBookByTitleAndAuthor("Described Book", "Some Author");
+
+			expect(result?.description).toBe("A plain string description.");
+			expect(global.fetch).toHaveBeenCalledTimes(2);
+			expect(global.fetch).toHaveBeenLastCalledWith(
+				expect.stringContaining("/works/OL999W.json"),
+			);
+		});
+
+		it("should populate description when works API returns an object with value", async () => {
+			const searchResponse = {
+				docs: [
+					{
+						title: "Described Book",
+						author_name: ["Some Author"],
+						key: "/works/OL999W",
+					},
+				],
+			};
+			const worksResponse = { description: { value: "An object description." } };
+
+			global.fetch = vi
+				.fn()
+				.mockResolvedValueOnce({
+					ok: true,
+					json: async () => searchResponse,
+				} as Response)
+				.mockResolvedValueOnce({
+					ok: true,
+					json: async () => worksResponse,
+				} as Response);
+
+			const result = await searchBookByTitleAndAuthor("Described Book", "Some Author");
+
+			expect(result?.description).toBe("An object description.");
+		});
+
+		it("should leave description undefined when works API returns no description", async () => {
+			const searchResponse = {
+				docs: [
+					{
+						title: "Undescribed Book",
+						author_name: ["Some Author"],
+						key: "/works/OL999W",
+					},
+				],
+			};
+
+			global.fetch = vi
+				.fn()
+				.mockResolvedValueOnce({
+					ok: true,
+					json: async () => searchResponse,
+				} as Response)
+				.mockResolvedValueOnce({
+					ok: true,
+					json: async () => ({}),
+				} as Response);
+
+			const result = await searchBookByTitleAndAuthor("Undescribed Book", "Some Author");
+
+			expect(result?.description).toBeUndefined();
+		});
+
+		it("should leave description undefined when works API request fails", async () => {
+			const searchResponse = {
+				docs: [
+					{
+						title: "Book With Failed Works Fetch",
+						author_name: ["Some Author"],
+						key: "/works/OL999W",
+					},
+				],
+			};
+
+			global.fetch = vi
+				.fn()
+				.mockResolvedValueOnce({
+					ok: true,
+					json: async () => searchResponse,
+				} as Response)
+				.mockResolvedValueOnce({
+					ok: false,
+				} as Response);
+
+			const result = await searchBookByTitleAndAuthor(
+				"Book With Failed Works Fetch",
+				"Some Author",
+			);
+
+			expect(result?.description).toBeUndefined();
+		});
+
+		it("should not fetch description when book has no work key", async () => {
+			const searchResponse = {
+				docs: [
+					{
+						title: "No Key Book",
+						author_name: ["Some Author"],
+						// No key field
+					},
+				],
+			};
+
+			global.fetch = vi.fn().mockResolvedValueOnce({
+				ok: true,
+				json: async () => searchResponse,
+			} as Response);
+
+			const result = await searchBookByTitleAndAuthor("No Key Book", "Some Author");
+
+			expect(result?.description).toBeUndefined();
+			expect(global.fetch).toHaveBeenCalledTimes(1);
 		});
 	});
 });
