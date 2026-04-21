@@ -13,9 +13,9 @@
 	},
 	"dependencies": {
 		"@astrojs/check": "^0.9.8",
-		"@astrojs/node": "^9.5.4",
+		"@astrojs/node": "^10.0.5",
 		"@tailwindcss/vite": "^4.2.2",
-		"astro": "^5.18.1",
+		"astro": "^6.1.8",
 		"gray-matter": "^4.0.3",
 		"openai": "^6.32.0",
 		"slugify": "^1.6.8",
